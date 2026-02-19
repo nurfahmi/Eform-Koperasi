@@ -57,13 +57,21 @@ app.use(async (req, res, next) => {
 
 // Routes
 const authRoutes = require('./routes/auth.routes');
+const setupRoutes = require('./routes/setup.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const userRoutes = require('./routes/user.routes');
 const submissionRoutes = require('./routes/submission.routes');
 const settingRoutes = require('./routes/setting.routes');
 const templateRoutes = require('./routes/template.routes');
+const prisma = require('./config/db');
 
-app.get('/', (req, res) => res.redirect('/auth/login'));
+// Root redirect - go to /setup if no superadmin, else /auth/login
+app.get('/', async (req, res) => {
+  const superadmin = await prisma.user.findFirst({ where: { role: 'superadmin' } });
+  res.redirect(superadmin ? '/auth/login' : '/setup');
+});
+
+app.use('/setup', setupRoutes);
 
 app.use('/auth', authRoutes);
 app.use('/dashboard', dashboardRoutes);
