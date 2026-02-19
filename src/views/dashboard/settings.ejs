@@ -1,0 +1,126 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <div class="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm px-4 py-3 rounded-xl mb-6"><%= success %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+  <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-3 rounded-xl mb-6"><%= error %></div>
+<% } %>
+
+<div class="max-w-2xl">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+    <h3 class="text-base font-semibold mb-6">Site / App Settings</h3>
+    <form method="POST" action="/dashboard/settings" enctype="multipart/form-data" class="space-y-5">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Site Name</label>
+          <input type="text" name="site_name" value="<%= settings.site_name %>"
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Short Name / Abbreviation</label>
+          <input type="text" name="site_short" value="<%= settings.site_short %>"
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+      </div>
+
+      <!-- Logo Upload -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Logo</label>
+        <div class="flex items-center gap-4">
+          <% if (settings.logo_url) { %>
+            <img src="<%= settings.logo_url %>" alt="Logo" class="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700">
+          <% } else { %>
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg border border-gray-200 dark:border-gray-700" style="background-color: <%= settings.primary_color %>">
+              <%= settings.site_short.charAt(0) %>
+            </div>
+          <% } %>
+          <div class="flex-1">
+            <input type="file" name="logo_file" accept=".jpg,.jpeg,.png,.svg,.webp"
+              class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+            <p class="text-xs text-gray-400 mt-1">JPG, PNG, SVG, WebP. Max 2MB. Leave empty to keep current.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Favicon Upload -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Favicon</label>
+        <div class="flex items-center gap-4">
+          <% if (settings.favicon_url) { %>
+            <img src="<%= settings.favicon_url %>" alt="Favicon" class="w-8 h-8 rounded border border-gray-200 dark:border-gray-700">
+          <% } else { %>
+            <div class="w-8 h-8 rounded flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-xs font-bold text-gray-500">—</div>
+          <% } %>
+          <div class="flex-1">
+            <input type="file" name="favicon_file" accept=".jpg,.jpeg,.png,.ico,.svg,.webp"
+              class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+            <p class="text-xs text-gray-400 mt-1">ICO, PNG, SVG. Max 2MB. Leave empty to keep current.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Primary Color</label>
+          <div class="flex items-center gap-3">
+            <input type="color" name="primary_color" value="<%= settings.primary_color %>" id="primaryPicker"
+              class="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer">
+            <input type="text" id="primaryHex" value="<%= settings.primary_color %>" readonly
+              class="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accent Color</label>
+          <div class="flex items-center gap-3">
+            <input type="color" name="accent_color" value="<%= settings.accent_color %>" id="accentPicker"
+              class="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer">
+            <input type="text" id="accentHex" value="<%= settings.accent_color %>" readonly
+              class="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none font-mono">
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">Preview</p>
+        <div class="flex items-center gap-4">
+          <% if (settings.logo_url) { %>
+            <img src="<%= settings.logo_url %>" alt="Logo" class="w-12 h-12 rounded-xl object-cover">
+          <% } else { %>
+            <div id="previewLogo" class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style="background-color: <%= settings.primary_color %>">
+              <%= settings.site_short.charAt(0) %>
+            </div>
+          <% } %>
+          <div>
+            <p class="font-semibold" id="previewName"><%= settings.site_name %></p>
+            <p class="text-xs text-gray-400" id="previewShort"><%= settings.site_short %></p>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-xl text-sm transition-colors">
+        Save Settings
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('primaryPicker').addEventListener('input', function(e) {
+  document.getElementById('primaryHex').value = e.target.value;
+  var logo = document.getElementById('previewLogo');
+  if (logo) logo.style.backgroundColor = e.target.value;
+});
+document.getElementById('accentPicker').addEventListener('input', function(e) {
+  document.getElementById('accentHex').value = e.target.value;
+});
+document.querySelector('input[name="site_name"]').addEventListener('input', function(e) {
+  document.getElementById('previewName').textContent = e.target.value;
+});
+document.querySelector('input[name="site_short"]').addEventListener('input', function(e) {
+  document.getElementById('previewShort').textContent = e.target.value;
+  var logo = document.getElementById('previewLogo');
+  if (logo) logo.textContent = e.target.value.charAt(0);
+});
+</script>

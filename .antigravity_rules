@@ -1,0 +1,49 @@
+---
+description: Project styling and structure boundaries for Eric Credit Submission System
+---
+
+## Styling
+- Use **TailwindCSS via CDN** (`cdn.tailwindcss.com`) — do NOT install Tailwind locally or use PostCSS
+- All styling is done with Tailwind utility classes directly in EJS templates
+- Use the Tailwind config block in `layouts/main.ejs` for custom colors (primary, accent) and font
+- Dark mode uses `class` strategy with `dark:` prefix variants
+- All views must be **mobile responsive** — use `sm:`, `md:`, `lg:` breakpoints
+- Cards use `rounded-2xl`, inputs use `rounded-xl`, badges use `rounded-lg`
+- Keep design consistent: white cards on light, gray-900 cards on dark, with border-gray-200/800
+
+## Project Structure
+```
+src/
+  app.js              - Express app setup, middleware, route registration
+  config/db.js        - Prisma client instance
+  controllers/        - Route handlers (one per feature)
+  models/             - Prisma data access (one per table/feature)
+  middlewares/         - Auth, role, upload middleware
+  routes/             - Express routers (one per feature)
+  services/           - Business logic (encryption, referral)
+  views/
+    layouts/main.ejs  - Main dashboard layout with sidebar
+    partials/         - Sidebar, header
+    dashboard/        - Authenticated views (analytics, cases, users, settings, submit)
+    public/           - Unauthenticated views (submit form)
+    auth/             - Login page
+prisma/
+  schema.prisma       - Database schema
+  seed.js             - Seed data
+public/
+  branding/           - Uploaded logo & favicon files
+```
+
+## Conventions
+- EJS templating with `express-ejs-layouts`
+- Session-based auth (express-session), NOT JWT for page auth
+- Flash messages via `connect-flash` for success/error
+- File uploads via `multer`
+- Sensitive submission data encrypted with `encryption.service.js`
+- Role hierarchy: superadmin > admin > masteragent > subagent
+- Routes mounted at `/dashboard` prefix for authenticated pages
+- Static files served from `/public` mapped to `public/` directory
+- All forms use standard POST with page redirect (no AJAX/SPA patterns)
+- Do NOT create MD/documentation files unless asked
+- Do NOT debug with browser unless asked
+- Do NOT over-engineer

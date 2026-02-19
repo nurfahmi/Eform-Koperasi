@@ -1,0 +1,256 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <div class="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm px-4 py-3 rounded-xl mb-6"><%= success %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+  <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-3 rounded-xl mb-6"><%= error %></div>
+<% } %>
+
+<div class="max-w-3xl">
+  <form method="POST" action="/dashboard/submit-new" enctype="multipart/form-data" class="space-y-6">
+    <input type="hidden" name="referral_code" value="<%= ref %>">
+    <% if (typeof draft !== 'undefined' && draft) { %>
+      <input type="hidden" name="draft_id" value="<%= draft.id %>">
+    <% } %>
+    <% const d = (typeof draft !== 'undefined' && draft) ? draft : null; %>
+    <% const a = d ? (d.applicant_data || {}) : {}; %>
+    <% const sp = d ? (d.spouse_data || {}) : {}; %>
+    <% const j = d ? (d.job_data || {}) : {}; %>
+    <% const r = d ? (d.reference_data || {}) : {}; %>
+
+    <!-- Section 1: Maklumat Pemohon -->
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-4">1. Maklumat Pemohon</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama</label>
+          <input type="text" name="applicant_name" value="<%= a.name || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No KP</label>
+          <input type="text" name="applicant_ic" value="<%= a.ic || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No Tel</label>
+          <input type="tel" name="applicant_phone" value="<%= a.phone || '' %>" inputmode="numeric" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <input type="email" name="applicant_email" value="<%= a.email || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alamat Terkini</label>
+          <textarea name="applicant_address" rows="2" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500"><%= a.address || '' %></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bilangan Tanggungan</label>
+          <input type="text" name="applicant_tanggungan" value="<%= a.tanggungan || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Taraf Pendidikan</label>
+          <select name="applicant_pendidikan" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">-- Pilih --</option>
+            <option value="SPM" <%= a.pendidikan === 'SPM' ? 'selected' : '' %>>SPM</option>
+            <option value="STPM/Diploma" <%= a.pendidikan === 'STPM/Diploma' ? 'selected' : '' %>>STPM / Diploma</option>
+            <option value="Ijazah" <%= a.pendidikan === 'Ijazah' ? 'selected' : '' %>>Ijazah / Degree</option>
+            <option value="Sarjana" <%= a.pendidikan === 'Sarjana' ? 'selected' : '' %>>Sarjana / Master</option>
+            <option value="PhD" <%= a.pendidikan === 'PhD' ? 'selected' : '' %>>PhD</option>
+            <option value="Lain-lain" <%= a.pendidikan === 'Lain-lain' ? 'selected' : '' %>>Lain-lain</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis Kediaman</label>
+          <select name="applicant_jenis_kediaman" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">-- Pilih --</option>
+            <option value="Sendiri" <%= a.jenis_kediaman === 'Sendiri' ? 'selected' : '' %>>Sendiri</option>
+            <option value="Sewa" <%= a.jenis_kediaman === 'Sewa' ? 'selected' : '' %>>Sewa</option>
+            <option value="Keluarga" <%= a.jenis_kediaman === 'Keluarga' ? 'selected' : '' %>>Keluarga</option>
+            <option value="Lain-lain" <%= a.jenis_kediaman === 'Lain-lain' ? 'selected' : '' %>>Lain-lain</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tempoh Menetap</label>
+          <input type="text" name="applicant_tempoh_menetap" value="<%= a.tempoh_menetap || '' %>" required placeholder="cth: 5 tahun" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Ibu</label>
+          <input type="text" name="applicant_nama_ibu" value="<%= a.nama_ibu || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No KP Ibu</label>
+          <input type="text" name="applicant_ic_ibu" value="<%= a.ic_ibu || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alamat Ibu</label>
+          <textarea name="applicant_alamat_ibu" rows="2" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500"><%= a.alamat_ibu || '' %></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Maklumat Pasangan -->
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-4">2. Maklumat Pasangan</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama</label>
+          <input type="text" name="spouse_name" value="<%= sp.name || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No IC</label>
+          <input type="text" name="spouse_ic" value="<%= sp.ic || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jawatan</label>
+          <input type="text" name="spouse_jawatan" value="<%= sp.jawatan || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alamat Majikan</label>
+          <input type="text" name="spouse_alamat_majikan" value="<%= sp.alamat_majikan || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tel Pejabat</label>
+          <input type="tel" name="spouse_tel_pejabat" value="<%= sp.tel_pejabat || '' %>" inputmode="numeric" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tel Bimbit</label>
+          <input type="tel" name="spouse_phone" value="<%= sp.phone || '' %>" inputmode="numeric" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gaji Pasangan (RM)</label>
+          <input type="text" name="spouse_gaji" value="<%= sp.gaji || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Maklumat Pekerjaan Pemohon -->
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-4">3. Maklumat Pekerjaan Pemohon</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Majikan</label>
+          <input type="text" name="job_employer" value="<%= j.employer || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alamat Majikan</label>
+          <input type="text" name="job_alamat_majikan" value="<%= j.alamat_majikan || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jawatan</label>
+          <input type="text" name="job_position" value="<%= j.position || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tarikh Mula Berkhidmat</label>
+          <input type="date" name="job_tarikh_mula" value="<%= j.tarikh_mula || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No Tel Pejabat</label>
+          <input type="tel" name="job_tel_pejabat" value="<%= j.tel_pejabat || '' %>" inputmode="numeric" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gaji Bersih (RM)</label>
+          <input type="text" name="job_salary" value="<%= j.salary || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Link</label>
+          <input type="text" name="job_payslip_link" value="<%= j.payslip_link || '' %>" placeholder="cth: https://..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ANM / Payslip Password</label>
+          <input type="text" name="job_payslip_password" value="<%= j.payslip_password || '' %>" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">HRMIS Password</label>
+          <input type="text" name="job_hrmis_password" value="<%= j.hrmis_password || '' %>" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Rujukan Saudara -->
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-2">4. Rujukan Saudara Terdekat</h2>
+      <p class="text-xs text-gray-400 mb-4">Adik beradik dan ibu bapa sahaja. Waris berumur 50 tahun ke bawah & tak sama alamat dengan pemohon.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama</label>
+          <input type="text" name="ref_name" value="<%= r.name || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No IC</label>
+          <input type="text" name="ref_ic" value="<%= r.ic || '' %>" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alamat Tetap</label>
+          <textarea name="ref_address" rows="2" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500"><%= r.address || '' %></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No Tel Bimbit</label>
+          <input type="tel" name="ref_phone" value="<%= r.phone || '' %>" inputmode="numeric" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pertalian</label>
+          <input type="text" name="ref_relationship" value="<%= r.relationship || '' %>" required placeholder="cth: Abang, Adik, Bapa" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Document Upload -->
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-2">5. Dokumen Diperlukan</h2>
+      <p class="text-xs text-gray-400 mb-4">Format: JPG, PNG, PDF | Max: 5MB per file</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC (Depan & Belakang)</label>
+          <input type="file" name="ic" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 1</label>
+          <input type="file" name="payslip1" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 2</label>
+          <input type="file" name="payslip2" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 3</label>
+          <input type="file" name="payslip3" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Muka Surat Akaun Bank</label>
+          <input type="file" name="bank_page" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tandatangan Customer</label>
+          <input type="file" name="signature" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chop Bulat, Chop Nama & Sign Majikan</label>
+          <input type="file" name="chop_sign" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bill Rumah</label>
+          <input type="file" name="bill_rumah" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Settlement Letter</label>
+          <input type="file" name="settlement_letter" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lain-lain (Other)</label>
+          <input type="file" name="other_doc" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" name="action" value="submit"
+        class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 rounded-2xl text-sm transition-colors">
+        Hantar Permohonan
+      </button>
+      <button type="submit" name="action" value="draft" formnovalidate
+        class="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-3 rounded-2xl text-sm transition-colors">
+        Simpan Draft
+      </button>
+    </div>
+  </form>
+</div>
+
+<script src="/public/js/image-quality.js"></script>

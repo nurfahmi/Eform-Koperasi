@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(100)
+  email         String   @unique @db.VarChar(150)
+  role          UserRole
+  referral_code String?  @unique @db.VarChar(20)
+  parent_id     String?  @db.VarChar(36)
+  created_by    String?  @db.VarChar(36)
+  created_at    DateTime @default(now())
+
+  parent  User?  @relation("UserParent", fields: [parent_id], references: [id], onDelete: SetNull)
+  children User[] @relation("UserParent")
+
+  creator    User?  @relation("UserCreator", fields: [created_by], references: [id], onDelete: SetNull)
+  createdUsers User[] @relation("UserCreator")
+
+  submissionsAsSub    Submission[] @relation("SubagentSubmissions")
+  submissionsAsMaster Submission[] @relation("MasteragentSubmissions")
+  takenSubmissions    Submission[] @relation("TakenSubmissions")
+  activityLogs        ActivityLog[]
+
+  @@map("users")
+}
+
+model Submission {
+  id              String           @id @default(uuid())
+  subagent_id     String?          @db.VarChar(36)
+  masteragent_id  String?          @db.VarChar(36)
+  referral_code   String?          @db.VarChar(20)
+  status          SubmissionStatus @default(pending)
+  taken_by        String?          @db.VarChar(36)
+  taken_at        DateTime?
+  released_at     DateTime?
+  release_reason  String?          @db.Text
+  created_at      DateTime         @default(now())
+
+  subagent    User? @relation("SubagentSubmissions", fields: [subagent_id], references: [id], onDelete: SetNull)
+  masteragent User? @relation("MasteragentSubmissions", fields: [masteragent_id], references: [id], onDelete: SetNull)
+  taker       User? @relation("TakenSubmissions", fields: [taken_by], references: [id], onDelete: SetNull)
+
+  details SubmissionDetail?
+  files   SubmissionFile[]
+
+  @@map("submissions")
+}
+
+model SubmissionDetail {
+  submission_id  String @id @db.VarChar(36)
+  applicant_data String? @db.Text
+  spouse_data    String? @db.Text
+  job_data       String? @db.Text
+  reference_data String? @db.Text
+
+  submission Submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+
+  @@map("submission_details")
+}
+
+model SubmissionFile {
+  id            Int      @id @default(autoincrement())
+  submission_id String   @db.VarChar(36)
+  file_type     String   @db.VarChar(50)
+  file_path     String   @db.VarChar(500)
+  uploaded_at   DateTime @default(now())
+
+  submission Submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+
+  @@map("submission_files")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  user_id     String   @db.VarChar(36)
+  action      String   @db.VarChar(100)
+  target_id   String?  @db.VarChar(36)
+  description String?  @db.Text
+  created_at  DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model SiteSetting {
+  key   String @id @db.VarChar(50)
+  value String @db.Text
+
+  @@map("site_settings")
+}
+
+enum UserRole {
+  superadmin
+  admin
+  masteragent
+  subagent
+}
+
+enum SubmissionStatus {
+  draft
+  pending
+  reviewed
+  approved
+  rejected
+}

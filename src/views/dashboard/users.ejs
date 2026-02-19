@@ -1,0 +1,206 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <div class="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm px-4 py-3 rounded-xl mb-6"><%= success %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+  <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-3 rounded-xl mb-6"><%= error %></div>
+<% } %>
+
+<!-- User List -->
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <h3 class="text-base font-semibold">Users (<%= users.length %>)</h3>
+    <% if (creatableRoles.length > 0) { %>
+      <button onclick="document.getElementById('createUserModal').classList.remove('hidden')"
+        class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add User
+      </button>
+    <% } %>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800">
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Name</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Email</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Role</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Referral</th>
+          <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+          <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Actions</th>
+          <% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(u => { %>
+          <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="px-3 sm:px-6 py-3 font-medium"><%= u.name %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= u.email %></td>
+            <td class="px-3 sm:px-6 py-3">
+              <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize
+                <% if (u.role === 'superadmin') { %>bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300
+                <% } else if (u.role === 'admin') { %>bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300
+                <% } else if (u.role === 'masteragent') { %>bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300
+                <% } else { %>bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400<% } %>">
+                <%= u.role %>
+              </span>
+            </td>
+            <td class="px-3 sm:px-6 py-3 font-mono text-xs hidden sm:table-cell"><%= u.referral_code || '-' %></td>
+            <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+            <td class="px-3 sm:px-6 py-3 text-center flex items-center justify-center gap-2">
+              <% if (u.id !== user.id) { %>
+              <% if (user.role === 'superadmin') { %>
+              <form method="POST" action="/dashboard/users/impersonate/<%= u.id %>" class="inline">
+                <button type="submit" class="text-primary-600 dark:text-primary-400 hover:underline text-xs font-medium">Impersonate</button>
+              </form>
+              <% } %>
+              <form method="POST" action="/dashboard/users/delete/<%= u.id %>" class="inline" onsubmit="return confirm('Delete this user?')">
+                <button type="submit" class="text-red-600 dark:text-red-400 hover:underline text-xs font-medium">Delete</button>
+              </form>
+              <% } %>
+            </td>
+            <% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create User Modal -->
+<% if (creatableRoles.length > 0) { %>
+<div id="createUserModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="document.getElementById('createUserModal').classList.add('hidden')"></div>
+  
+  <!-- Modal Content -->
+  <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-md mx-4 p-6 transform transition-all">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-base font-semibold">Create New User</h3>
+      <button onclick="document.getElementById('createUserModal').classList.add('hidden')"
+        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form method="POST" action="/dashboard/users" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+        <input type="text" name="name" required
+          class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+        <input type="email" name="email" required
+          class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+        <select name="role" id="roleSelect" onchange="handleRoleChange()"
+          class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+          <% creatableRoles.forEach(r => { %>
+            <option value="<%= r %>"><%= r.charAt(0).toUpperCase() + r.slice(1) %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <% if (user.role === 'masteragent') { %>
+        <input type="hidden" name="parent_id" value="<%= user.id %>">
+      <% } else { %>
+        <div id="parentField">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Master Agent</label>
+          <div class="relative">
+            <input type="hidden" name="parent_id" id="parentIdHidden">
+            <input type="text" id="maSearch" autocomplete="off" placeholder="Search master agent..."
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+            <div id="maDropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              <% if (typeof masterAgents !== 'undefined') { masterAgents.forEach(ma => { %>
+                <div class="ma-option px-4 py-2.5 text-sm hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer transition-colors"
+                  data-id="<%= ma.id %>" data-name="<%= ma.name %>" data-ref="<%= ma.referral_code || '' %>">
+                  <span class="font-medium"><%= ma.name %></span>
+                  <% if (ma.referral_code) { %>
+                    <span class="text-xs text-gray-400 ml-2"><%= ma.referral_code %></span>
+                  <% } %>
+                </div>
+              <% })} %>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <button type="submit"
+        class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-xl text-sm transition-colors">
+        Create User
+      </button>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<script>
+function handleRoleChange() {
+  const role = document.getElementById('roleSelect')?.value;
+  const parentField = document.getElementById('parentField');
+  if (parentField) {
+    parentField.style.display = role === 'subagent' ? 'block' : 'none';
+    if (role !== 'subagent') {
+      document.getElementById('parentIdHidden').value = '';
+      document.getElementById('maSearch').value = '';
+    }
+  }
+}
+document.addEventListener('DOMContentLoaded', handleRoleChange);
+
+// Searchable master agent dropdown
+(function() {
+  const search = document.getElementById('maSearch');
+  const dropdown = document.getElementById('maDropdown');
+  const hidden = document.getElementById('parentIdHidden');
+  if (!search || !dropdown) return;
+
+  const options = dropdown.querySelectorAll('.ma-option');
+
+  search.addEventListener('focus', function() {
+    dropdown.classList.remove('hidden');
+    filterOptions();
+  });
+
+  search.addEventListener('input', function() {
+    dropdown.classList.remove('hidden');
+    hidden.value = '';
+    filterOptions();
+  });
+
+  function filterOptions() {
+    const q = search.value.toLowerCase();
+    let visible = 0;
+    options.forEach(opt => {
+      const name = opt.dataset.name.toLowerCase();
+      const ref = opt.dataset.ref.toLowerCase();
+      const match = name.includes(q) || ref.includes(q);
+      opt.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+  }
+
+  options.forEach(opt => {
+    opt.addEventListener('click', function() {
+      hidden.value = this.dataset.id;
+      search.value = this.dataset.name;
+      dropdown.classList.add('hidden');
+    });
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!search.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  });
+})();
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('createUserModal')?.classList.add('hidden');
+  }
+});
+</script>

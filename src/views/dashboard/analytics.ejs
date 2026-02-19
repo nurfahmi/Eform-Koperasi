@@ -1,0 +1,85 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <div class="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm px-4 py-3 rounded-xl mb-6">
+    <%= success %>
+  </div>
+<% } %>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Total Submissions</p>
+    <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100"><%= stats.total %></p>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Total Agents</p>
+    <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100"><%= totalAgents %></p>
+  </div>
+</div>
+
+<% if (typeof referralCode !== 'undefined' && referralCode && user.role !== 'superadmin' && user.role !== 'admin') { %>
+<!-- Referral Link -->
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 mb-8">
+  <div class="flex items-center justify-between gap-4">
+    <div class="min-w-0">
+      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Public Submission Link</p>
+      <p class="text-xs text-gray-400 mb-2">Share this link with customers to submit applications under your referral.</p>
+      <div class="flex items-center gap-2">
+        <code id="refLink" class="flex-1 min-w-0 text-xs bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg font-mono truncate"><%= `${typeof req !== 'undefined' ? req.protocol + '://' + req.get('host') : ''}` %>/submit?ref=<%= referralCode %></code>
+        <button onclick="copyRefLink()" id="copyBtn"
+          class="shrink-0 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-medium transition-colors">
+          Copy
+        </button>
+      </div>
+    </div>
+    <div class="shrink-0 text-right">
+      <p class="text-xs text-gray-400">Referral Code</p>
+      <p class="text-sm font-bold font-mono text-primary-600 dark:text-primary-400"><%= referralCode %></p>
+    </div>
+  </div>
+</div>
+<script>
+function copyRefLink() {
+  const link = document.getElementById('refLink').textContent;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+</script>
+<% } %>
+
+<!-- Performance Table -->
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-base font-semibold">Agent Performance</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800">
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Name</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Role</th>
+          <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (performance.length === 0) { %>
+          <tr><td colspan="3" class="px-3 sm:px-6 py-8 text-center text-gray-400">No agents found</td></tr>
+        <% } %>
+        <% performance.forEach(p => { %>
+          <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="px-3 sm:px-6 py-3 font-medium"><%= p.name %></td>
+            <td class="px-3 sm:px-6 py-3 hidden sm:table-cell">
+              <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize
+                <%= p.role === 'masteragent' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' %>">
+                <%= p.role %>
+              </span>
+            </td>
+            <td class="px-3 sm:px-6 py-3 text-center"><%= p.total %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

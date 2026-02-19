@@ -1,0 +1,41 @@
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <h3 class="text-base font-semibold">Pending Cases</h3>
+    <span class="text-xs text-gray-400">Oldest → Newest</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800">
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Customer</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Agent</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Referral</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden md:table-cell">Date</th>
+          <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (submissions.length === 0) { %>
+          <tr><td colspan="5" class="px-3 sm:px-6 py-8 text-center text-gray-400">No pending cases</td></tr>
+        <% } %>
+        <% submissions.forEach(s => { %>
+          <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="px-3 sm:px-6 py-3 font-medium"><%= s.applicant_name %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= s.agent_name %></td>
+            <td class="px-3 sm:px-6 py-3 font-mono text-xs hidden sm:table-cell"><%= s.referral_code || '-' %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell"><%= new Date(s.created_at).toLocaleString() %></td>
+            <td class="px-3 sm:px-6 py-3 text-center">
+              <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+                <form method="POST" action="/dashboard/cases/<%= s.id %>/take" class="inline">
+                  <button type="submit" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-medium transition-colors">Ambil Kes</button>
+                </form>
+              <% } else { %>
+                <a href="/dashboard/cases/<%= s.id %>" class="text-primary-600 dark:text-primary-400 hover:underline text-xs font-medium">View</a>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

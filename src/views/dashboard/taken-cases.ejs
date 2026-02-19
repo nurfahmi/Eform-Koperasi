@@ -1,0 +1,39 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <div class="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-sm px-4 py-3 rounded-xl mb-6"><%= success %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+  <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-3 rounded-xl mb-6"><%= error %></div>
+<% } %>
+
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-base font-semibold">Taken Cases</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-200 dark:border-gray-800">
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Customer</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Taken By</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Taken Date</th>
+          <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (submissions.length === 0) { %>
+          <tr><td colspan="4" class="px-3 sm:px-6 py-8 text-center text-gray-400">No taken cases</td></tr>
+        <% } %>
+        <% submissions.forEach(s => { %>
+          <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <td class="px-3 sm:px-6 py-3 font-medium"><%= s.applicant_name %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400"><%= s.taken_by_name || '-' %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell"><%= s.taken_at ? new Date(s.taken_at).toLocaleString() : '-' %></td>
+            <td class="px-3 sm:px-6 py-3 text-center">
+              <a href="/dashboard/cases/<%= s.id %>" class="text-primary-600 dark:text-primary-400 hover:underline text-xs font-medium">View</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

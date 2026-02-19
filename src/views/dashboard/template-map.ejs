@@ -1,0 +1,414 @@
+<div class="max-w-7xl mx-auto space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <a href="/dashboard/settings/templates" class="text-xs text-primary-500 hover:underline">← Back to Templates</a>
+      <h2 class="text-xl font-bold mt-1"><%= template.label %> — Field Mapper</h2>
+      <p class="text-sm text-gray-500 mt-1">Click on any field to assign a standard name. Works for both normal and boxed fields.</p>
+    </div>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success && success.length) { %>
+    <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-xl text-sm"><%= success %></div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error && error.length) { %>
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm"><%= error %></div>
+  <% } %>
+
+  <!-- Legend -->
+  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 flex flex-wrap gap-4 text-xs">
+    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-green-500/40 border border-green-500"></span> Mapped</span>
+    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-orange-500/40 border border-orange-500"></span> Not mapped</span>
+    <span class="ml-auto font-medium" id="mappedCount">0 / <%= fields.length %> mapped</span>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-4">
+    <!-- PDF Preview -->
+    <div class="flex-1 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <span class="text-sm font-medium">PDF Preview</span>
+        <div class="flex items-center gap-2">
+          <button id="btnPrev" class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-xs">← Prev</button>
+          <span id="pageInfo" class="text-xs text-gray-500">Loading...</span>
+          <button id="btnNext" class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-xs">Next →</button>
+          <button type="button" id="btnAiSuggest" class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium transition-colors ml-2">🤖 AI Suggest</button>
+        </div>
+      </div>
+      <div id="pdfContainer" style="position:relative; overflow:auto; max-height:80vh;">
+        <canvas id="pdfCanvas"></canvas>
+        <div id="fieldOverlays" style="position:absolute; top:0; left:0;"></div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="w-full lg:w-80 flex-shrink-0">
+      <form method="POST" action="/dashboard/settings/templates/<%= template.key %>/map" id="mapForm">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+            <button type="submit" class="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors">
+              💾 Save Mappings
+            </button>
+          </div>
+          <div id="fieldList" class="divide-y divide-gray-100 dark:divide-gray-800 max-h-[70vh] overflow-y-auto"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Popup -->
+<div id="fieldPopup" class="hidden fixed z-50 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-4 w-72">
+  <p class="text-xs text-gray-400 mb-2">PDF Field: <strong id="popupFieldName" class="text-gray-700 dark:text-gray-300"></strong></p>
+  <select id="popupSelect" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm mb-3"></select>
+  <div class="flex gap-2">
+    <button type="button" id="btnApply" class="flex-1 px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium">Apply</button>
+    <button type="button" id="btnCancel" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function() {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var pdfUrl = '/dashboard/settings/templates/<%= template.key %>/pdf';
+  var standardFields = <%- JSON.stringify(standardFields) %>;
+  var serverFields = <%- JSON.stringify(fields) %>;
+  var savedMap = <%- JSON.stringify(fieldMap) %>;
+
+  var pdfDoc = null;
+  var currentPage = 1;
+  var mappings = {};
+  var activeField = null;
+  var currentPageAnnotations = [];
+  var currentPageH = 0;
+  var currentScale = 1.5;
+  var popupOpen = false;
+
+  // Load saved mappings
+  Object.keys(savedMap).forEach(function(k) { mappings[k] = savedMap[k]; });
+
+  // Build select options
+  function buildOptions() {
+    var sel = document.getElementById('popupSelect');
+    sel.innerHTML = '<option value="">— Skip (don\'t map) —</option>';
+    var groups = {};
+    Object.keys(standardFields).forEach(function(key) {
+      var g = standardFields[key].group;
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(key);
+    });
+    Object.keys(groups).forEach(function(g) {
+      var og = document.createElement('optgroup');
+      og.label = g;
+      groups[g].forEach(function(key) {
+        var o = document.createElement('option');
+        o.value = key;
+        o.textContent = key + ' — ' + standardFields[key].label;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }
+
+  // Render page
+  function renderPage(num) {
+    pdfDoc.getPage(num).then(function(page) {
+      var scale = 1.5;
+      var vp = page.getViewport({ scale: scale });
+      var canvas = document.getElementById('pdfCanvas');
+      var ctx = canvas.getContext('2d');
+      canvas.width = vp.width;
+      canvas.height = vp.height;
+
+      page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+        page.getAnnotations().then(function(anns) {
+          var overlays = document.getElementById('fieldOverlays');
+          overlays.innerHTML = '';
+          overlays.style.width = vp.width + 'px';
+          overlays.style.height = vp.height + 'px';
+          var pageH = page.view[3];
+
+          // Store annotations for AI suggest
+          currentPageAnnotations = anns;
+          currentPageH = pageH;
+          currentScale = scale;
+
+          anns.forEach(function(ann) {
+            if (!ann.fieldName) return;
+            var r = ann.rect;
+            var left = r[0] * scale;
+            var top = (pageH - r[3]) * scale;
+            var w = (r[2] - r[0]) * scale;
+            var h = (r[3] - r[1]) * scale;
+            if (w < 5 || h < 5) return;
+
+            var mapped = !!mappings[ann.fieldName];
+
+            var div = document.createElement('div');
+            div.style.cssText = 'position:absolute;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;overflow:hidden;box-sizing:border-box;cursor:pointer;text-shadow:0 0 2px rgba(0,0,0,0.5);letter-spacing:0.3px;';
+            div.style.left = left + 'px';
+            div.style.top = top + 'px';
+            div.style.width = w + 'px';
+            div.style.height = h + 'px';
+
+            if (mapped) {
+              div.style.background = 'rgba(22,163,74,0.85)';
+              div.style.border = '1.5px solid rgba(22,163,74,1)';
+              div.style.color = '#fff';
+              var stdKey = mappings[ann.fieldName];
+              var humanLabel = standardFields[stdKey] ? standardFields[stdKey].label : stdKey;
+              div.title = ann.fieldName + ' → ' + humanLabel;
+            } else {
+              div.style.background = 'rgba(234,88,12,0.8)';
+              div.style.border = '1.5px solid rgba(234,88,12,1)';
+              div.style.color = '#fff';
+              div.title = ann.fieldName + ' (click to map)';
+            }
+
+            // Show human label when mapped, otherwise show PDF field name
+            var displayName = mapped ? (standardFields[mappings[ann.fieldName]] ? standardFields[mappings[ann.fieldName]].label : mappings[ann.fieldName]) : ann.fieldName;
+            var label = displayName.length > 20 ? displayName.substring(0, 17) + '...' : displayName;
+            div.textContent = label;
+
+            div.addEventListener('click', function(e) {
+              e.stopPropagation();
+              openPopup(e, ann.fieldName);
+            });
+
+            overlays.appendChild(div);
+          });
+        });
+      });
+
+      document.getElementById('pageInfo').textContent = 'Page ' + num + ' / ' + pdfDoc.numPages;
+      currentPage = num;
+    });
+  }
+
+  // Sidebar field list
+  function buildFieldList() {
+    var list = document.getElementById('fieldList');
+    list.innerHTML = '';
+    document.querySelectorAll('#mapForm input[data-gen]').forEach(function(el) { el.remove(); });
+
+    serverFields.forEach(function(f) {
+      var std = mappings[f.name];
+      var div = document.createElement('div');
+      div.className = 'px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800';
+      div.style.borderLeft = '3px solid ' + (std ? '#22c55e' : '#f97316');
+
+      var statusText = std ? '✅ → ' + std : '⚠️ Not mapped';
+      div.innerHTML =
+        '<div class="font-mono font-medium truncate">' + f.name + '</div>' +
+        '<div class="text-gray-400 mt-0.5">' + statusText + '</div>';
+
+      div.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openPopup(e, f.name);
+      });
+      list.appendChild(div);
+
+      // Add hidden input for mapped fields
+      if (std) {
+        var inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'mapping[' + f.name + ']';
+        inp.value = std;
+        inp.setAttribute('data-gen', '1');
+        document.getElementById('mapForm').appendChild(inp);
+      }
+    });
+  }
+
+  // Popup
+  function openPopup(e, fieldName) {
+    activeField = fieldName;
+    popupOpen = true;
+    var popup = document.getElementById('fieldPopup');
+    document.getElementById('popupFieldName').textContent = fieldName;
+    document.getElementById('popupSelect').value = mappings[fieldName] || '';
+
+    var x = Math.min(e.clientX + 10, window.innerWidth - 300);
+    var y = Math.min(e.clientY - 50, window.innerHeight - 200);
+    if (y < 10) y = 10;
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
+    popup.classList.remove('hidden');
+  }
+
+  function closePopup() {
+    document.getElementById('fieldPopup').classList.add('hidden');
+    activeField = null;
+    popupOpen = false;
+  }
+
+  function applyMapping() {
+    var val = document.getElementById('popupSelect').value;
+    if (activeField && val) {
+      mappings[activeField] = val;
+    } else if (activeField) {
+      delete mappings[activeField];
+    }
+    closePopup();
+    renderPage(currentPage);
+    buildFieldList();
+    updateCount();
+  }
+
+  function updateCount() {
+    var c = Object.keys(mappings).length;
+    document.getElementById('mappedCount').textContent = c + ' / ' + serverFields.length + ' mapped';
+  }
+
+  // Bind events
+  document.getElementById('btnPrev').addEventListener('click', function() { if (currentPage > 1) renderPage(currentPage - 1); });
+  document.getElementById('btnNext').addEventListener('click', function() { if (currentPage < pdfDoc.numPages) renderPage(currentPage + 1); });
+  document.getElementById('btnApply').addEventListener('click', applyMapping);
+  document.getElementById('btnCancel').addEventListener('click', closePopup);
+
+  // AI Suggest
+  document.getElementById('btnAiSuggest').addEventListener('click', function() {
+    var btn = this;
+    if (!currentPageAnnotations.length) return alert('No fields on this page');
+
+    // Collect fields on current page
+    var fieldsOnPage = [];
+    currentPageAnnotations.forEach(function(ann) {
+      if (!ann.fieldName || !ann.rect) return;
+      var r = ann.rect;
+      var w = r[2] - r[0];
+      var h = r[3] - r[1];
+      if (w < 3 || h < 3) return;
+      fieldsOnPage.push({
+        name: ann.fieldName,
+        x: r[0], y: currentPageH - r[3],
+        width: w, height: h
+      });
+    });
+
+    if (!fieldsOnPage.length) return alert('No fields on this page');
+
+    // Sort fields by Y position (top to bottom)
+    fieldsOnPage.sort(function(a, b) { return a.y - b.y; });
+
+    // Group into sections by Y gap (>60 PDF units = new section)
+    var sections = [];
+    var currentSection = [fieldsOnPage[0]];
+    for (var i = 1; i < fieldsOnPage.length; i++) {
+      var gap = fieldsOnPage[i].y - (fieldsOnPage[i-1].y + fieldsOnPage[i-1].height);
+      if (gap > 60) {
+        sections.push(currentSection);
+        currentSection = [fieldsOnPage[i]];
+      } else {
+        currentSection.push(fieldsOnPage[i]);
+      }
+    }
+    sections.push(currentSection);
+
+    console.log('Detected ' + sections.length + ' section(s)');
+
+    // Crop canvas for each section
+    var canvas = document.getElementById('pdfCanvas');
+    var scale = currentScale;
+    var padding = 30; // PDF units padding above/below
+    var sectionPayloads = [];
+
+    sections.forEach(function(fields, idx) {
+      // Find section bounds in PDF coords
+      var minY = Infinity, maxY = 0;
+      fields.forEach(function(f) {
+        if (f.y < minY) minY = f.y;
+        var bottom = f.y + f.height;
+        if (bottom > maxY) maxY = bottom;
+      });
+
+      // Add padding
+      var cropTop = Math.max(0, minY - padding);
+      var cropBottom = Math.min(currentPageH, maxY + padding);
+
+      // Convert to pixel coords for canvas crop
+      var pxTop = Math.round(cropTop * scale);
+      var pxBottom = Math.round(cropBottom * scale);
+      var pxHeight = pxBottom - pxTop;
+      if (pxHeight < 10) return;
+
+      // Crop the canvas strip
+      var cropCanvas = document.createElement('canvas');
+      cropCanvas.width = canvas.width;
+      cropCanvas.height = pxHeight;
+      var cropCtx = cropCanvas.getContext('2d');
+      cropCtx.drawImage(canvas, 0, pxTop, canvas.width, pxHeight, 0, 0, canvas.width, pxHeight);
+
+      // Compress to max ~50KB
+      var quality = 0.7;
+      var imgBase64 = cropCanvas.toDataURL('image/jpeg', quality).split(',')[1];
+      while (imgBase64.length > 66000 && quality > 0.1) { // ~50KB in base64
+        quality -= 0.1;
+        imgBase64 = cropCanvas.toDataURL('image/jpeg', quality).split(',')[1];
+      }
+
+      // Adjust field positions relative to crop
+      var adjustedFields = fields.map(function(f) {
+        return { name: f.name, x: f.x, y: f.y - cropTop, width: f.width, height: f.height };
+      });
+
+      console.log('Section ' + (idx+1) + ': ' + fields.length + ' fields, ' + Math.round(imgBase64.length * 0.75 / 1024) + 'KB');
+
+      sectionPayloads.push({
+        imageBase64: imgBase64,
+        fieldsOnPage: adjustedFields
+      });
+    });
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Analyzing ' + sectionPayloads.length + ' section(s)...';
+
+    fetch('/dashboard/settings/templates/<%= template.key %>/ai-suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sections: sectionPayloads })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { alert('AI error: ' + data.error); return; }
+      var fm = data.fieldMapping || {};
+      var count = 0;
+      Object.keys(fm).forEach(function(pdfField) {
+        var stdKey = fm[pdfField];
+        if (standardFields[stdKey]) {
+          mappings[pdfField] = stdKey;
+          count++;
+        }
+      });
+      alert('AI suggested ' + count + ' mapping(s) from ' + sectionPayloads.length + ' section(s). Review and save.');
+      renderPage(currentPage);
+      buildFieldList();
+      updateCount();
+    })
+    .catch(function(err) { alert('AI error: ' + err.message); })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = '🤖 AI Suggest';
+    });
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!popupOpen) return;
+    var popup = document.getElementById('fieldPopup');
+    if (!popup.contains(e.target)) closePopup();
+  });
+
+  // Init
+  buildOptions();
+
+  pdfjsLib.getDocument(pdfUrl).promise.then(function(doc) {
+    pdfDoc = doc;
+    renderPage(1);
+    buildFieldList();
+    updateCount();
+  }).catch(function(err) {
+    console.error('PDF load error:', err);
+    document.getElementById('pageInfo').textContent = 'Error loading PDF';
+  });
+})();
+</script>
