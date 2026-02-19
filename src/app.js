@@ -1,9 +1,20 @@
 const express = require('express');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const flash = require('connect-flash');
 const path = require('path');
 const expressLayouts = require('express-ejs-layouts');
 require('dotenv').config();
+
+// Parse DATABASE_URL for session store
+const dbUrl = new URL(process.env.DATABASE_URL);
+const sessionStore = new MySQLStore({
+  host: dbUrl.hostname,
+  port: dbUrl.port || 3306,
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.replace('/', '')
+});
 
 const app = express();
 
@@ -23,9 +34,10 @@ app.use(express.json({ limit: '10mb' }));
 // Static files
 app.use('/public', express.static(path.join(__dirname, '../public')));
 
-// Session
+// Session (stored in MySQL, persists across restarts)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 24 * 60 * 60 * 1000 }
