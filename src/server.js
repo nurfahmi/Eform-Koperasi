@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3001;
 // Auto-create database tables on first run
 try {
   console.log('Running database sync...');
-  execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
+  execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit' });
   console.log('Database ready.');
 } catch (err) {
   console.error('Database sync failed:', err.message);
