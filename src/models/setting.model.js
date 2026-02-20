@@ -6,7 +6,12 @@ const DEFAULTS = {
   logo_url: '',
   favicon_url: '',
   primary_color: '#0ea5e9',
-  accent_color: '#8b5cf6'
+  accent_color: '#8b5cf6',
+  iq_enabled: 'true',
+  iq_blur_threshold: '50',
+  iq_bright_threshold: '245',
+  iq_bright_percent: '40',
+  iq_block_upload: 'false'
 };
 
 const Setting = {

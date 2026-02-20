@@ -273,6 +273,13 @@
   </form>
 </div>
 
+<div id="iqSettings" class="hidden"
+  data-enabled="<%= (typeof siteSettings !== 'undefined' && siteSettings.iq_enabled) || 'true' %>"
+  data-blur="<%= (typeof siteSettings !== 'undefined' && siteSettings.iq_blur_threshold) || '50' %>"
+  data-bright="<%= (typeof siteSettings !== 'undefined' && siteSettings.iq_bright_threshold) || '245' %>"
+  data-bright-pct="<%= (typeof siteSettings !== 'undefined' && siteSettings.iq_bright_percent) || '40' %>"
+  data-block="<%= (typeof siteSettings !== 'undefined' && siteSettings.iq_block_upload) || 'false' %>">
+</div>
 <script src="/public/js/image-quality.js"></script>
 <script>
 (function() {

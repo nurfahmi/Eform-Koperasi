@@ -1,13 +1,22 @@
 /**
  * Image Quality Checker
  * Detects blurry and overexposed (flash) images before upload.
- * Auto-attaches to all file inputs that accept images.
+ * Reads settings from #iqSettings data attributes (injected by server).
+ * Falls back to sensible defaults if not present.
  */
 (function () {
-  const BLUR_THRESHOLD = 100;
-  const OVEREXPOSE_BRIGHTNESS = 240;
-  const OVEREXPOSE_PERCENT = 0.30;
+  // Read settings from the hidden element or use defaults
+  const cfgEl = document.getElementById('iqSettings');
+  const cfg = cfgEl ? cfgEl.dataset : {};
+
+  const ENABLED = (cfg.enabled || 'true') === 'true';
+  const BLUR_THRESHOLD = parseInt(cfg.blur || '50', 10);
+  const OVEREXPOSE_BRIGHTNESS = parseInt(cfg.bright || '245', 10);
+  const OVEREXPOSE_PERCENT = parseInt(cfg.brightPct || '40', 10) / 100;
+  const BLOCK_UPLOAD = (cfg.block || 'false') === 'true';
   const MAX_ANALYZE_SIZE = 512;
+
+  if (!ENABLED) return; // Image quality check disabled
 
   function analyzeImage(file) {
     return new Promise((resolve) => {
@@ -45,8 +54,8 @@
         const GRID = 10;
         const cellW = Math.floor(w / GRID);
         const cellH = Math.floor(h / GRID);
-        const GLARE_CELL_THRESHOLD = 0.40; // 40% of cell pixels bright
-        const GLARE_BRIGHTNESS = 230;
+        const GLARE_CELL_THRESHOLD = 0.40;
+        const GLARE_BRIGHTNESS = Math.min(OVEREXPOSE_BRIGHTNESS, 230);
         let hasGlare = false;
         for (let gy = 0; gy < GRID && !hasGlare; gy++) {
           for (let gx = 0; gx < GRID && !hasGlare; gx++) {
@@ -94,7 +103,6 @@
   }
 
   function createWarning(input, issues) {
-    // Remove existing warning
     removeWarning(input);
 
     const msgs = [];
@@ -106,26 +114,40 @@
     wrap.className = 'iq-warning mt-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800';
     wrap.dataset.iqWarning = '1';
 
+    let buttonsHtml = '<button type="button" class="iq-change px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors">Tukar Gambar</button>';
+    if (!BLOCK_UPLOAD) {
+      buttonsHtml += ' <button type="button" class="iq-keep px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors">Teruskan</button>';
+    }
+
+    const icon = BLOCK_UPLOAD ? '🚫' : '⚠️';
+    const extraMsg = BLOCK_UPLOAD ? ' Sila muat naik semula gambar yang jelas.' : '';
+
     wrap.innerHTML = `
       <p class="text-xs text-amber-700 dark:text-amber-300 mb-2">
-        ⚠️ Gambar ini mungkin <strong>${msgs.join(' dan ')}</strong>. Sila pastikan gambar jelas.
+        ${icon} Gambar ini mungkin <strong>${msgs.join(' dan ')}</strong>.${extraMsg}
       </p>
-      <div class="flex gap-2">
-        <button type="button" class="iq-change px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors">Tukar Gambar</button>
-        <button type="button" class="iq-keep px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors">Teruskan</button>
-      </div>
+      <div class="flex gap-2">${buttonsHtml}</div>
     `;
 
     input.parentElement.appendChild(wrap);
 
+    // If blocking, clear the file input so it can't be submitted
+    if (BLOCK_UPLOAD) {
+      input.value = '';
+    }
+
     wrap.querySelector('.iq-change').addEventListener('click', () => {
       input.value = '';
       removeWarning(input);
+      input.click();
     });
 
-    wrap.querySelector('.iq-keep').addEventListener('click', () => {
-      removeWarning(input);
-    });
+    const keepBtn = wrap.querySelector('.iq-keep');
+    if (keepBtn) {
+      keepBtn.addEventListener('click', () => {
+        removeWarning(input);
+      });
+    }
   }
 
   function removeWarning(input) {

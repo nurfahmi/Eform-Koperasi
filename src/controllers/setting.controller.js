@@ -51,8 +51,15 @@ const SettingController = {
 
   async updateSettings(req, res) {
     try {
-      const { site_name, site_short, primary_color, accent_color } = req.body;
-      const updates = { site_name, site_short, primary_color, accent_color };
+      const { site_name, site_short, primary_color, accent_color,
+        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload } = req.body;
+      const updates = { site_name, site_short, primary_color, accent_color,
+        iq_enabled: iq_enabled || 'false',
+        iq_blur_threshold: iq_blur_threshold || '50',
+        iq_bright_threshold: iq_bright_threshold || '245',
+        iq_bright_percent: iq_bright_percent || '40',
+        iq_block_upload: iq_block_upload || 'false'
+      };
 
       // Handle logo upload
       if (req.files && req.files.logo_file && req.files.logo_file[0]) {
