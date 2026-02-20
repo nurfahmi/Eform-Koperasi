@@ -6,6 +6,26 @@
 <% } %>
 
 <div class="max-w-3xl">
+
+  <!-- WhatsApp Auto-Fill -->
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 mb-6">
+    <div class="flex items-center gap-2 mb-3">
+      <svg class="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <h2 class="text-lg font-semibold">Auto Isi dari WhatsApp</h2>
+    </div>
+    <p class="text-xs text-gray-400 mb-3">Paste mesej WhatsApp di bawah, kemudian klik "Auto Isi Borang" untuk isi semua field secara automatik.</p>
+    <textarea id="waMessageInput" rows="6" placeholder="Paste mesej WhatsApp di sini..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-green-500 font-mono"></textarea>
+    <div class="flex gap-2 mt-3">
+      <button type="button" id="btnAutoFill" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-xl text-sm transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Auto Isi Borang
+      </button>
+      <button type="button" id="btnClearWa" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-6 rounded-xl text-sm transition-colors">
+        Kosongkan
+      </button>
+    </div>
+    <div id="waFillResult" class="hidden mt-3 text-sm px-4 py-3 rounded-xl"></div>
+  </div>
   <form method="POST" action="/dashboard/submit-new" enctype="multipart/form-data" class="space-y-6">
     <input type="hidden" name="referral_code" value="<%= ref %>">
     <% if (typeof draft !== 'undefined' && draft) { %>
@@ -254,3 +274,145 @@
 </div>
 
 <script src="/public/js/image-quality.js"></script>
+<script>
+(function() {
+  const btnAutoFill = document.getElementById('btnAutoFill');
+  const btnClearWa = document.getElementById('btnClearWa');
+  const waInput = document.getElementById('waMessageInput');
+  const waResult = document.getElementById('waFillResult');
+
+  function showResult(msg, isError) {
+    waResult.classList.remove('hidden', 'bg-green-50', 'dark:bg-green-900/20', 'text-green-700', 'dark:text-green-300',
+      'bg-red-50', 'dark:bg-red-900/20', 'text-red-700', 'dark:text-red-300');
+    if (isError) {
+      waResult.classList.add('bg-red-50', 'dark:bg-red-900/20', 'text-red-700', 'dark:text-red-300');
+    } else {
+      waResult.classList.add('bg-green-50', 'dark:bg-green-900/20', 'text-green-700', 'dark:text-green-300');
+    }
+    waResult.textContent = msg;
+  }
+
+  function setVal(name, value) {
+    const el = document.querySelector('[name="' + name + '"]');
+    if (!el || !value) return false;
+    value = value.trim();
+    if (!value) return false;
+    if (el.tagName === 'SELECT') {
+      // Try to match option by value (case-insensitive)
+      const opts = el.options;
+      for (let i = 0; i < opts.length; i++) {
+        if (opts[i].value.toLowerCase() === value.toLowerCase()) {
+          el.value = opts[i].value;
+          return true;
+        }
+      }
+      // Partial match
+      for (let i = 0; i < opts.length; i++) {
+        if (opts[i].value.toLowerCase().includes(value.toLowerCase()) || value.toLowerCase().includes(opts[i].value.toLowerCase())) {
+          el.value = opts[i].value;
+          return true;
+        }
+      }
+      return false;
+    }
+    el.value = value;
+    return true;
+  }
+
+  function parseWhatsApp(text) {
+    const lines = text.split('\n');
+    let section = 0; // 0=unknown, 1=pemohon, 2=pasangan, 3=pekerjaan, 4=rujukan
+    let filled = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      if (!line) continue;
+
+      // Detect section headers
+      const lineLower = line.toLowerCase();
+      if (lineLower.includes('maklumat pemohon') && !lineLower.includes('pekerjaan')) { section = 1; continue; }
+      if (lineLower.includes('maklumat pasangan')) { section = 2; continue; }
+      if (lineLower.includes('maklumat pekerjaan') || lineLower.includes('pekerjaan pemohon')) { section = 3; continue; }
+      if (lineLower.includes('rujukan saudara')) { section = 4; continue; }
+      if (lineLower.includes('doc diperlukan') || lineLower.includes('dokumen diperlukan')) { section = 5; continue; }
+      if (section === 5) continue; // Skip document section
+
+      // Remove emoji markers
+      line = line.replace(/👉/g, '').trim();
+
+      // Extract key:value - split on first colon
+      const colonIdx = line.indexOf(':');
+      if (colonIdx === -1) continue;
+
+      const rawKey = line.substring(0, colonIdx).trim().toLowerCase();
+      let value = line.substring(colonIdx + 1).trim();
+      // Remove trailing :- or -
+      value = value.replace(/^[:\-\s]+/, '').trim();
+
+      if (!value) continue;
+
+      // Map based on section + key
+      if (section === 1) {
+        if (rawKey.includes('nama') && rawKey.includes('ibu')) { if(setVal('applicant_nama_ibu', value)) filled++; }
+        else if (rawKey.includes('alamat') && !rawKey.includes('terkini')) { if(setVal('applicant_alamat_ibu', value)) filled++; }
+        else if (rawKey.includes('nama')) { if(setVal('applicant_name', value)) filled++; }
+        else if (rawKey.includes('no kp') || rawKey.includes('kp') || rawKey.includes('no ic') || rawKey.includes('ic')) { if(setVal('applicant_ic', value)) filled++; }
+        else if (rawKey.includes('no tel') || rawKey.includes('tel')) { if(setVal('applicant_phone', value)) filled++; }
+        else if (rawKey.includes('email')) { if(setVal('applicant_email', value)) filled++; }
+        else if (rawKey.includes('alamat terkini') || rawKey.includes('alamat')) { if(setVal('applicant_address', value)) filled++; }
+        else if (rawKey.includes('tanggungan') || rawKey.includes('bilangan')) { if(setVal('applicant_tanggungan', value)) filled++; }
+        else if (rawKey.includes('pendidikan') || rawKey.includes('taraf')) { if(setVal('applicant_pendidikan', value)) filled++; }
+        else if (rawKey.includes('kediaman') || rawKey.includes('jenis')) { if(setVal('applicant_jenis_kediaman', value)) filled++; }
+        else if (rawKey.includes('tempoh') || rawKey.includes('menetap')) { if(setVal('applicant_tempoh_menetap', value)) filled++; }
+      }
+      else if (section === 2) {
+        if (rawKey.includes('nama')) { if(setVal('spouse_name', value)) filled++; }
+        else if (rawKey.includes('ic') || rawKey.includes('kp')) { if(setVal('spouse_ic', value)) filled++; }
+        else if (rawKey.includes('jawatan')) { if(setVal('spouse_jawatan', value)) filled++; }
+        else if (rawKey.includes('alamat')) { if(setVal('spouse_alamat_majikan', value)) filled++; }
+        else if (rawKey.includes('pejbt') || rawKey.includes('pejabat')) { if(setVal('spouse_tel_pejabat', value)) filled++; }
+        else if (rawKey.includes('bimbit') || rawKey.includes('tel')) { if(setVal('spouse_phone', value)) filled++; }
+        else if (rawKey.includes('gaji')) { if(setVal('spouse_gaji', value)) filled++; }
+      }
+      else if (section === 3) {
+        if (rawKey.includes('nama majikan') || (rawKey.includes('nama') && rawKey.includes('majikan'))) { if(setVal('job_employer', value)) filled++; }
+        else if (rawKey.includes('alamat')) { if(setVal('job_alamat_majikan', value)) filled++; }
+        else if (rawKey.includes('jawatan')) { if(setVal('job_position', value)) filled++; }
+        else if (rawKey.includes('tarikh') || rawKey.includes('mula')) { if(setVal('job_tarikh_mula', value)) filled++; }
+        else if (rawKey.includes('tel') || rawKey.includes('pejbt') || rawKey.includes('pejabat')) { if(setVal('job_tel_pejabat', value)) filled++; }
+        else if (rawKey.includes('payslip') && rawKey.includes('link')) { if(setVal('job_payslip_link', value)) filled++; }
+        else if (rawKey.includes('payslip') && rawKey.includes('password') || rawKey.includes('anm')) { if(setVal('job_payslip_password', value)) filled++; }
+        else if (rawKey.includes('hrmis')) { if(setVal('job_hrmis_password', value)) filled++; }
+      }
+      else if (section === 4) {
+        if (rawKey.includes('nama')) { if(setVal('ref_name', value)) filled++; }
+        else if (rawKey.includes('alamat')) { if(setVal('ref_address', value)) filled++; }
+        else if (rawKey.includes('ic') || rawKey.includes('kp')) { if(setVal('ref_ic', value)) filled++; }
+        else if (rawKey.includes('tel') || rawKey.includes('bimbit')) { if(setVal('ref_phone', value)) filled++; }
+        else if (rawKey.includes('pertalian') || rawKey.includes('hubungan')) { if(setVal('ref_relationship', value)) filled++; }
+      }
+    }
+
+    return filled;
+  }
+
+  btnAutoFill.addEventListener('click', function() {
+    const text = waInput.value.trim();
+    if (!text) {
+      showResult('Sila paste mesej WhatsApp terlebih dahulu.', true);
+      return;
+    }
+    const filled = parseWhatsApp(text);
+    if (filled > 0) {
+      showResult('✅ Berjaya mengisi ' + filled + ' field secara automatik. Sila semak dan lengkapkan field yang kosong.', false);
+    } else {
+      showResult('⚠️ Tiada field yang dapat diisi. Pastikan format mesej WhatsApp betul.', true);
+    }
+  });
+
+  btnClearWa.addEventListener('click', function() {
+    waInput.value = '';
+    waResult.classList.add('hidden');
+  });
+})();
+</script>
