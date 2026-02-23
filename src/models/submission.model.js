@@ -206,6 +206,25 @@ const Submission = {
     ]);
 
     return { total, pending, approved, reviewed, rejected };
+  },
+
+  async findRecent(userId, role, limit = 10) {
+    let where = { status: { not: 'draft' } };
+    if (role === 'masteragent') where.masteragent_id = userId;
+    else if (role === 'subagent') where.subagent_id = userId;
+
+    const rows = await prisma.submission.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      take: limit,
+      include: {
+        subagent: { select: { name: true } },
+        masteragent: { select: { name: true } },
+        taker: { select: { name: true } },
+        details: { select: { applicant_data: true, job_data: true } }
+      }
+    });
+    return this._withNames(rows);
   }
 };
 
