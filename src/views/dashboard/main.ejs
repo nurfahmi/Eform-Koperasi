@@ -191,3 +191,23 @@ function copyRefLink() {
     </div>
   </div>
 </div>
+
+<% if (user.role === 'superadmin' || user.role === 'admin') { %>
+<script>
+// Auto-reload dashboard when new case arrives
+(function() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(proto + '//' + location.host + '/ws/notifications');
+  ws.onmessage = function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'NEW_CASE') {
+        // Reload page after short delay to update case list
+        setTimeout(() => location.reload(), 2000);
+      }
+    } catch(e) {}
+  };
+  ws.onclose = function() { setTimeout(() => location.reload(), 10000); };
+})();
+</script>
+<% } %>

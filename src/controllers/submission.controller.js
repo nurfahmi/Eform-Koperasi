@@ -58,9 +58,7 @@ const SubmissionController = {
         user: currentUser,
         ref,
         agents,
-        page: 'submit',
-        success: req.flash('success'),
-        error: req.flash('error')
+        page: 'submit'
       });
     } catch (err) {
       console.error('Private submit page error:', err);
@@ -442,9 +440,7 @@ const SubmissionController = {
         ref,
         agents,
         page: 'drafts',
-        draft: submission,
-        success: req.flash('success'),
-        error: req.flash('error')
+        draft: submission
       });
     } catch (err) {
       console.error('Edit draft error:', err);
