@@ -21,12 +21,14 @@ const WsService = {
     }, 30000);
   },
 
-  notifyNewCase(caseId, applicantName) {
+  notifyNewCase({ caseId, applicantName, agentName }) {
     if (!wss) return;
     const payload = JSON.stringify({
       type: 'NEW_CASE',
       caseId,
       applicantName: applicantName || 'Unknown',
+      agentName: agentName || '-',
+      date: new Date().toLocaleDateString('ms-MY'),
       timestamp: Date.now()
     });
     wss.clients.forEach(client => {

@@ -229,7 +229,15 @@ const SubmissionController = {
         res.redirect('/dashboard/drafts');
       } else {
         // Notify admins via WebSocket
-        WsService.notifyNewCase(submission.id, applicant_data.name);
+        let agentName = '-';
+        if (subagent_id || masteragent_id) {
+          try {
+            const User = require('../models/user.model');
+            const ag = await User.findById(subagent_id || masteragent_id);
+            if (ag) agentName = ag.name;
+          } catch(e) {}
+        }
+        WsService.notifyNewCase({ caseId: submission.id, applicantName: applicant_data.name, agentName });
         req.flash('success', 'Application submitted successfully!');
         res.redirect(redirectUrl);
       }
