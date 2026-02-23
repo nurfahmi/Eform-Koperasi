@@ -36,6 +36,21 @@ const WsService = {
         client.send(payload);
       }
     });
+  },
+
+  notifyCaseTaken(caseId, takerName) {
+    if (!wss) return;
+    const payload = JSON.stringify({
+      type: 'CASE_TAKEN',
+      caseId,
+      takerName: takerName || 'Admin',
+      timestamp: Date.now()
+    });
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(payload);
+      }
+    });
   }
 };
 

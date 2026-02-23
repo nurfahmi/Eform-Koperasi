@@ -358,6 +358,7 @@ const SubmissionController = {
         target_id: req.params.id,
         description: `Took case ${req.params.id}`
       });
+      WsService.notifyCaseTaken(req.params.id, currentUser.name);
       req.flash('success', 'Case taken.');
       res.redirect(`/dashboard/cases/${req.params.id}`);
     } catch (err) {

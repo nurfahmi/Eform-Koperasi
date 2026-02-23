@@ -208,7 +208,10 @@ function copyRefLink() {
         const data = JSON.parse(event.data);
         if (data.type === 'NEW_CASE') {
           addCaseRow(data);
-          updateBadge();
+          updateBadge(1);
+        } else if (data.type === 'CASE_TAKEN') {
+          removeCaseRow(data.caseId);
+          updateBadge(-1);
         }
       } catch(e) {}
     };
@@ -226,6 +229,7 @@ function copyRefLink() {
 
     const tr = document.createElement('tr');
     tr.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors';
+    tr.dataset.caseId = data.caseId;
     tr.style.animation = 'highlightRow 3s ease-out';
     tr.innerHTML = `
       <td class="px-3 sm:px-6 py-3"><div class="font-medium">${data.applicantName}</div></td>
@@ -237,11 +241,40 @@ function copyRefLink() {
     tbody.insertBefore(tr, tbody.firstChild);
   }
 
-  function updateBadge() {
+  function removeCaseRow(caseId) {
+    const tbody = document.querySelector('table tbody');
+    if (!tbody) return;
+    // Find by data-case-id or by link href
+    let row = tbody.querySelector('tr[data-case-id="' + caseId + '"]');
+    if (!row) {
+      const link = tbody.querySelector('a[href="/dashboard/cases/' + caseId + '"]');
+      if (link) row = link.closest('tr');
+    }
+    if (row) {
+      row.style.transition = 'opacity 0.5s';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        row.remove();
+        // Show "Tiada kes" if table is empty
+        if (!tbody.querySelector('tr')) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="4" class="px-3 sm:px-6 py-8 text-center text-gray-400">Tiada kes</td>';
+          tbody.appendChild(tr);
+        }
+      }, 500);
+    }
+  }
+
+  function updateBadge(delta) {
     const badge = document.querySelector('h3 span');
     if (badge) {
-      badge.textContent = parseInt(badge.textContent || '0') + 1;
-    } else {
+      const newCount = Math.max(0, parseInt(badge.textContent || '0') + delta);
+      if (newCount > 0) {
+        badge.textContent = newCount;
+      } else {
+        badge.remove();
+      }
+    } else if (delta > 0) {
       const h3 = document.querySelector('h3.text-base');
       if (h3 && !h3.querySelector('span')) {
         const span = document.createElement('span');
