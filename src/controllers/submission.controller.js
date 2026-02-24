@@ -38,9 +38,7 @@ const SubmissionController = {
       ref,
       agentName,
       success: req.flash ? req.flash('success') : null,
-      error: req.flash ? req.flash('error') : null,
-      iq_warning: req.flash ? req.flash('iq_warning') : null,
-      iq_files: req.flash ? req.flash('iq_files') : null
+      error: req.flash ? req.flash('error') : null
     });
   },
 
@@ -61,9 +59,7 @@ const SubmissionController = {
         user: currentUser,
         ref,
         agents,
-        page: 'submit',
-        iq_warning: req.flash ? req.flash('iq_warning') : null,
-        iq_files: req.flash ? req.flash('iq_files') : null
+        page: 'submit'
       });
     } catch (err) {
       console.error('Private submit page error:', err);
@@ -119,18 +115,6 @@ const SubmissionController = {
         if (missing.length > 0) {
           const names = missing.map(([, label]) => label).join(', ');
           req.flash('error', `Sila isi semua maklumat yang diperlukan: ${names}`);
-          return res.redirect(redirectUrl);
-        }
-      }
-
-      // Server-side image quality check (skip if user acknowledged warnings)
-      if (!isDraft && !req.body.iq_override) {
-        const { warnings, hasIssues } = await ImageQualityService.analyzeAll(req.files);
-        if (hasIssues) {
-          const msg = ImageQualityService.formatWarnings(warnings);
-          req.flash('iq_warning', msg);
-          req.flash('iq_files', JSON.stringify(warnings));
-          // Keep uploaded files in temp for re-submission
           return res.redirect(redirectUrl);
         }
       }
@@ -530,6 +514,44 @@ const SubmissionController = {
       console.error('PDF generation error:', err);
       req.flash('error', 'Failed to generate PDF: ' + err.message);
       res.redirect(`/dashboard/cases/${req.params.id}`);
+    }
+  },
+
+  async checkImageQuality(req, res) {
+    try {
+      if (!req.file) return res.json({ issues: [], ok: true });
+
+      // Skip non-image files
+      if (!req.file.mimetype || !req.file.mimetype.startsWith('image/')) {
+        // Clean up temp file
+        try { fs.unlinkSync(req.file.path); } catch {}
+        return res.json({ issues: [], ok: true });
+      }
+
+      const result = await ImageQualityService.analyze(req.file.path);
+
+      // Clean up temp file
+      try { fs.unlinkSync(req.file.path); } catch {}
+
+      const issueLabels = {
+        blurry: 'Gambar kabur (blurry)',
+        overexposed: 'Gambar terlalu terang (overexposed/flash)',
+        glare: 'Ada pantulan cahaya (glare/flash)',
+        too_dark: 'Gambar terlalu gelap'
+      };
+
+      const messages = result.issues.map(i => issueLabels[i] || i);
+
+      res.json({
+        ok: result.issues.length === 0,
+        issues: result.issues,
+        messages,
+        scores: result.scores
+      });
+    } catch (err) {
+      console.error('Image quality check error:', err);
+      if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
+      res.json({ ok: true, issues: [] });
     }
   }
 };

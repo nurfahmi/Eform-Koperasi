@@ -7,6 +7,7 @@ const upload = require('../middlewares/upload.middleware');
 // Public routes
 router.get('/submit', SubmissionController.submitPage);
 router.post('/submit', upload.fields(SubmissionController.FILE_FIELDS), SubmissionController.submitForm);
+router.post('/api/check-image', upload.single('file'), SubmissionController.checkImageQuality);
 
 // Protected routes
 router.get('/submit-new', authMiddleware, SubmissionController.privateSubmitPage);
