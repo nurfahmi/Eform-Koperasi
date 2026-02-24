@@ -21,18 +21,19 @@ const FILE_FIELDS = [
   { name: 'other_doc', maxCount: 1 }
 ];
 
+const REQUIRED_FILES = ['ic', 'payslip1', 'payslip2', 'payslip3', 'bank_page'];
+const REQUIRED_FILE_LABELS = {
+  ic: 'IC (Depan & Belakang)',
+  payslip1: 'Payslip Bulan 1',
+  payslip2: 'Payslip Bulan 2',
+  payslip3: 'Payslip Bulan 3',
+  bank_page: 'Muka Surat Akaun Bank'
+};
+
 const SubmissionController = {
   FILE_FIELDS,
-
-  // Files that MUST be uploaded for a valid submission
-  REQUIRED_FILES: ['ic', 'payslip1', 'payslip2', 'payslip3', 'bank_page'],
-  REQUIRED_FILE_LABELS: {
-    ic: 'IC (Depan & Belakang)',
-    payslip1: 'Payslip Bulan 1',
-    payslip2: 'Payslip Bulan 2',
-    payslip3: 'Payslip Bulan 3',
-    bank_page: 'Muka Surat Akaun Bank'
-  },
+  REQUIRED_FILES,
+  REQUIRED_FILE_LABELS,
 
   async submitPage(req, res) {
     const ref = req.query.ref || '';
@@ -132,9 +133,9 @@ const SubmissionController = {
       // File upload validation (skip for drafts)
       if (!isDraft) {
         const uploadedFiles = req.files || {};
-        const missingFiles = this.REQUIRED_FILES.filter(f => !uploadedFiles[f] || uploadedFiles[f].length === 0);
+        const missingFiles = REQUIRED_FILES.filter(f => !uploadedFiles[f] || uploadedFiles[f].length === 0);
         if (missingFiles.length > 0) {
-          const names = missingFiles.map(f => this.REQUIRED_FILE_LABELS[f] || f).join(', ');
+          const names = missingFiles.map(f => REQUIRED_FILE_LABELS[f] || f).join(', ');
           req.flash('error', `Sila muat naik dokumen yang diperlukan: ${names}`);
           return res.redirect(redirectUrl);
         }
@@ -273,8 +274,10 @@ const SubmissionController = {
       }
     } catch (err) {
       console.error('Submit error:', err);
+      const isPrivate = req.session && req.session.user;
+      const fallback = isPrivate ? '/dashboard/submit-new' : `/submit?ref=${req.body.referral_code || ''}`;
       req.flash('error', 'Failed to submit application.');
-      res.redirect(`/submit?ref=${req.body.referral_code || ''}`);
+      res.redirect(fallback);
     }
   },
 
