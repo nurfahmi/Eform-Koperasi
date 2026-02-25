@@ -269,10 +269,9 @@ const ImageQualityService = {
               issues.push('blurry');
             }
           }
-        } else if (words.length === 0 && !issues.includes('too_dark') && !issues.includes('overexposed')) {
-          // No text at all — likely very blurry or wrong image
-          issues.push('blurry');
         }
+        // If OCR found < 3 words, don't assume blurry — could be rotated, non-standard font, etc.
+        // Just rely on pixel analysis results in that case
       } catch (ocrErr) {
         // OCR failed — keep pixel analysis results as-is
         scores.ocrError = true;
