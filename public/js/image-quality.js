@@ -1,6 +1,6 @@
 /**
  * Image Quality Checker (Server-side via AJAX)
- * Sends image to server for analysis with sharp, shows inline warning.
+ * Sends image to server for sharp + OCR analysis, shows inline warning.
  */
 (function () {
   const cfgEl = document.getElementById('iqSettings');
@@ -8,7 +8,7 @@
   const ENABLED = (cfg.enabled || 'true') === 'true';
   if (!ENABLED) return;
 
-  function createWarning(input, messages) {
+  function createWarning(input, messages, scores) {
     removeWarning(input);
 
     const wrap = document.createElement('div');
@@ -17,8 +17,16 @@
 
     const msgHtml = messages.map(m => `<div class="flex items-start gap-2"><span class="text-amber-500">⚠️</span><span>${m}</span></div>`).join('');
 
+    // Show OCR confidence if available
+    let scoreHtml = '';
+    if (scores && scores.ocrConfidence !== undefined) {
+      const confColor = scores.ocrConfidence < 50 ? 'text-red-500' : scores.ocrConfidence < 70 ? 'text-amber-500' : 'text-green-500';
+      scoreHtml = `<p class="text-xs text-gray-400 mt-1">Kejelasan teks (OCR): <span class="${confColor} font-semibold">${scores.ocrConfidence}%</span></p>`;
+    }
+
     wrap.innerHTML = `
       <div class="text-xs text-amber-700 dark:text-amber-300 mb-2 space-y-1">${msgHtml}</div>
+      ${scoreHtml}
       <p class="text-xs text-gray-400 mb-2">Sila tukar gambar yang lebih jelas, atau abaikan jika gambar sudah betul.</p>
       <div class="flex gap-2">
         <button type="button" class="iq-change px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors">Tukar Gambar</button>
@@ -35,7 +43,6 @@
     });
 
     wrap.querySelector('.iq-keep').addEventListener('click', () => {
-      // Track this file as having acknowledged quality issues
       const fieldName = input.name;
       let tracker = document.getElementById('iq_warned_files');
       if (!tracker) {
@@ -60,7 +67,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'iq-warning mt-2 p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800';
     wrap.dataset.iqWarning = '1';
-    wrap.innerHTML = '<p class="text-xs text-blue-600 dark:text-blue-300 flex items-center gap-2"><svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Memeriksa kualiti gambar...</p>';
+    wrap.innerHTML = '<p class="text-xs text-blue-600 dark:text-blue-300 flex items-center gap-2"><svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Memeriksa kualiti gambar & kejelasan teks...</p>';
     input.parentElement.appendChild(wrap);
   }
 
@@ -82,7 +89,7 @@
       removeWarning(input);
 
       if (!data.ok && data.messages && data.messages.length > 0) {
-        createWarning(input, data.messages);
+        createWarning(input, data.messages, data.scores);
       }
     } catch (err) {
       removeWarning(input);
@@ -97,8 +104,8 @@
         removeWarning(input);
         const file = e.target.files[0];
         if (!file) return;
-        // Only check images, skip PDFs
-        if (!file.type.startsWith('image/')) return;
+        // Check images and PDFs
+        if (!file.type.startsWith('image/') && file.type !== 'application/pdf') return;
         checkImage(input, file);
       });
     });

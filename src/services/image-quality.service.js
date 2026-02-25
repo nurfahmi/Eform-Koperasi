@@ -1,33 +1,103 @@
 /**
- * Image Quality Service (server-side with sharp)
- * Detects blur and glare/overexposure in uploaded images.
+ * Image Quality Service
+ * Multi-layer detection: Sharp pixel analysis + Tesseract OCR confidence.
+ * Supports images and PDFs (first page converted to image).
  */
 const sharp = require('sharp');
+const Tesseract = require('tesseract.js');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
-// Thresholds
-const BLUR_THRESHOLD = 200;          // Laplacian variance below this = blurry
-const LOW_CONTRAST_THRESHOLD = 35;   // Std dev below this = low contrast / washed out
-const OVEREXPOSE_BRIGHTNESS = 235;   // Pixel brightness above this = "bright"
-const OVEREXPOSE_PERCENT = 0.30;     // >30% bright pixels = overexposed
-const GLARE_GRID = 6;               // 6×6 grid for local glare (larger cells)
-const GLARE_CELL_BRIGHT = 190;      // Lower threshold to catch laminated surface shine
-const GLARE_CELL_PERCENT = 0.35;    // >35% bright pixels in a cell = glare
+// --- Thresholds ---
+const BLUR_LAP_THRESHOLD = 200;       // Laplacian variance below this = likely blurry
+const BLUR_EDGE_THRESHOLD = 0.08;     // Edge density below this = likely blurry
+const OVEREXPOSE_BRIGHTNESS = 235;
+const OVEREXPOSE_PERCENT = 0.30;
+const DARK_THRESHOLD = 40;
+const DARK_PERCENT = 0.50;
+const LOW_CONTRAST_THRESHOLD = 35;
 
-const ANALYZE_SIZE = 512;           // Resize for performance
+// Glare: color-aware (bright + desaturated + no edges)
+const GLARE_GRID = 8;
+const GLARE_BRIGHT_THRESHOLD = 200;
+const GLARE_SAT_THRESHOLD = 0.15;     // Low saturation = washed out
+const GLARE_EDGE_THRESHOLD = 0.08;    // Few edges in cell = no detail
+const GLARE_MIN_CELLS = 2;            // Need at least 2 glare cells
+
+// OCR
+const OCR_CONFIDENCE_THRESHOLD = 50;  // Average word confidence below this = unreadable
+const OCR_MIN_WORDS = 3;              // Need at least a few words to judge
+
+const ANALYZE_SIZE = 800;             // Higher res for better accuracy
+
+// Lazy-init Tesseract worker (reused across requests)
+let _worker = null;
+let _workerReady = false;
+
+async function getWorker() {
+  if (_worker && _workerReady) return _worker;
+
+  _worker = await Tesseract.createWorker('eng+msa', 1, {
+    logger: () => {} // silent
+  });
+
+  _workerReady = true;
+  return _worker;
+}
+
+/**
+ * Convert first page of a PDF to a temporary PNG file.
+ * Uses pdf-to-img (ESM, loaded via dynamic import).
+ */
+async function pdfToTempImage(pdfPath) {
+  const { pdf } = await import('pdf-to-img');
+  const doc = await pdf(pdfPath, { scale: 2 });
+
+  // Get first page as PNG buffer
+  let pageBuffer = null;
+  for await (const page of doc) {
+    pageBuffer = page;
+    break; // only first page
+  }
+
+  if (!pageBuffer) throw new Error('Could not render PDF page');
+
+  // Save to temp file
+  const tmpPath = path.join(os.tmpdir(), `iq_pdf_${Date.now()}.png`);
+  fs.writeFileSync(tmpPath, pageBuffer);
+  return tmpPath;
+}
 
 const ImageQualityService = {
   /**
-   * Analyze a single image file for quality issues.
-   * @param {string} filePath - Absolute path to the image file
-   * @returns {Promise<{issues: string[], scores: object}>}
+   * Analyze a single image or PDF file for quality issues.
+   * PDFs are converted to image first (first page).
+   * Runs pixel analysis (blur, glare, exposure) + OCR confidence.
    */
-  async analyze(filePath) {
+  async analyze(filePath, mimetype) {
     const issues = [];
     const scores = {};
+    let tmpPdfImage = null;
+
+    // If PDF, convert first page to image
+    const isPdf = mimetype === 'application/pdf'
+      || (typeof mimetype === 'undefined' && filePath.toLowerCase().endsWith('.pdf'));
+
+    if (isPdf) {
+      try {
+        tmpPdfImage = await pdfToTempImage(filePath);
+        filePath = tmpPdfImage;
+        scores.source = 'pdf';
+      } catch (pdfErr) {
+        // Can't render PDF — skip quality check
+        return { issues: [], scores: { source: 'pdf', pdfError: true }, skipped: true };
+      }
+    }
 
     try {
-      // Load and resize for performance
-      const { data, info } = await sharp(filePath)
+      // === LAYER 1: Sharp pixel analysis ===
+      const { data: grayData, info } = await sharp(filePath)
         .resize(ANALYZE_SIZE, ANALYZE_SIZE, { fit: 'inside', withoutEnlargement: true })
         .grayscale()
         .raw()
@@ -35,121 +105,173 @@ const ImageQualityService = {
 
       const { width, height } = info;
       const totalPixels = width * height;
+      const innerPixels = (width - 2) * (height - 2);
 
-      // --- 1. Blur detection (Laplacian variance) ---
-      let lapSum = 0;
-      let lapSumSq = 0;
-      let lapCount = 0;
-
+      // --- 1a. Blur: Laplacian variance ---
+      let lapSum = 0, lapSumSq = 0;
       for (let y = 1; y < height - 1; y++) {
         for (let x = 1; x < width - 1; x++) {
           const idx = y * width + x;
-          const lap = -4 * data[idx]
-            + data[idx - 1]
-            + data[idx + 1]
-            + data[idx - width]
-            + data[idx + width];
+          const lap = -4 * grayData[idx]
+            + grayData[idx - 1] + grayData[idx + 1]
+            + grayData[idx - width] + grayData[idx + width];
           lapSum += lap;
           lapSumSq += lap * lap;
-          lapCount++;
         }
       }
+      const lapMean = lapSum / innerPixels;
+      const lapVariance = (lapSumSq / innerPixels) - (lapMean * lapMean);
+      scores.laplacianVar = Math.round(lapVariance);
 
-      const lapMean = lapSum / lapCount;
-      const lapVariance = (lapSumSq / lapCount) - (lapMean * lapMean);
-      scores.blur = Math.round(lapVariance);
+      // --- 1b. Blur: Sobel edge density ---
+      let strongEdges = 0;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const tl = grayData[(y - 1) * width + (x - 1)];
+          const tc = grayData[(y - 1) * width + x];
+          const tr = grayData[(y - 1) * width + (x + 1)];
+          const ml = grayData[y * width + (x - 1)];
+          const mr = grayData[y * width + (x + 1)];
+          const bl = grayData[(y + 1) * width + (x - 1)];
+          const bc = grayData[(y + 1) * width + x];
+          const br = grayData[(y + 1) * width + (x + 1)];
 
-      if (lapVariance < BLUR_THRESHOLD) {
+          const gx = -tl + tr - 2 * ml + 2 * mr - bl + br;
+          const gy = -tl - 2 * tc - tr + bl + 2 * bc + br;
+          const mag = Math.sqrt(gx * gx + gy * gy);
+          if (mag > 50) strongEdges++;
+        }
+      }
+      const edgeDensity = strongEdges / innerPixels;
+      scores.edgeDensity = Math.round(edgeDensity * 100); // percentage
+
+      // Combined blur decision
+      if (lapVariance < BLUR_LAP_THRESHOLD && edgeDensity < BLUR_EDGE_THRESHOLD) {
         issues.push('blurry');
       }
 
-      // --- 1b. Low contrast check (std deviation of pixels) ---
-      let pixSum = 0;
-      let pixSumSq = 0;
+      // --- 1c. Pixel stats ---
+      let pixSum = 0, pixSumSq = 0, brightCount = 0, darkCount = 0;
       for (let i = 0; i < totalPixels; i++) {
-        pixSum += data[i];
-        pixSumSq += data[i] * data[i];
+        const v = grayData[i];
+        pixSum += v;
+        pixSumSq += v * v;
+        if (v > OVEREXPOSE_BRIGHTNESS) brightCount++;
+        if (v < DARK_THRESHOLD) darkCount++;
       }
       const pixMean = pixSum / totalPixels;
       const pixStdDev = Math.sqrt((pixSumSq / totalPixels) - (pixMean * pixMean));
       scores.contrast = Math.round(pixStdDev);
+      scores.avgBrightness = Math.round(pixMean);
 
-      if (pixStdDev < LOW_CONTRAST_THRESHOLD && !issues.includes('blurry')) {
-        issues.push('low_contrast');
-      }
-
-      // --- 2. Overall overexposure ---
-      let brightCount = 0;
-      for (let i = 0; i < totalPixels; i++) {
-        if (data[i] > OVEREXPOSE_BRIGHTNESS) brightCount++;
-      }
-
+      // Overexposure
       const brightPercent = brightCount / totalPixels;
       scores.overexposure = Math.round(brightPercent * 100);
-
       if (brightPercent > OVEREXPOSE_PERCENT) {
         issues.push('overexposed');
       }
 
-      // --- 3. Local glare detection (grid-based with relative brightness) ---
+      // Too dark
+      const darkPercent = darkCount / totalPixels;
+      scores.dark = Math.round(darkPercent * 100);
+      if (darkPercent > DARK_PERCENT) {
+        issues.push('too_dark');
+      }
+
+      // Low contrast
+      if (pixStdDev < LOW_CONTRAST_THRESHOLD && !issues.includes('blurry')) {
+        issues.push('low_contrast');
+      }
+
+      // --- 2. Glare: Color-aware grid analysis ---
+      // Glare = bright + desaturated + no edges (flash washes out color & detail)
+      const { data: colorData } = await sharp(filePath)
+        .resize(ANALYZE_SIZE, ANALYZE_SIZE, { fit: 'inside', withoutEnlargement: true })
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
       const cellW = Math.floor(width / GLARE_GRID);
       const cellH = Math.floor(height / GLARE_GRID);
-      let glareCount = 0;
+      let glareCells = 0;
 
-      // Calculate average brightness per cell
-      const cellAvgs = [];
       for (let gy = 0; gy < GLARE_GRID; gy++) {
         for (let gx = 0; gx < GLARE_GRID; gx++) {
-          let cellSum = 0;
-          let cellBright = 0;
-          let cellTotal = 0;
+          let cellBright = 0, cellDesat = 0, cellEdges = 0, cellTotal = 0;
 
-          for (let y = gy * cellH; y < (gy + 1) * cellH; y++) {
-            for (let x = gx * cellW; x < (gx + 1) * cellW; x++) {
-              const val = data[y * width + x];
-              cellSum += val;
+          for (let y = gy * cellH; y < (gy + 1) * cellH && y < height; y++) {
+            for (let x = gx * cellW; x < (gx + 1) * cellW && x < width; x++) {
+              const gi = y * width + x;
+              const ci = gi * 3;
+              const r = colorData[ci], g = colorData[ci + 1], b = colorData[ci + 2];
+              const brightness = grayData[gi];
+
+              // Saturation (HSV)
+              const max = Math.max(r, g, b);
+              const min = Math.min(r, g, b);
+              const sat = max > 0 ? (max - min) / max : 0;
+
+              if (brightness > GLARE_BRIGHT_THRESHOLD) cellBright++;
+              if (brightness > 180 && sat < GLARE_SAT_THRESHOLD) cellDesat++;
+
+              // Simple edge check
+              if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+                const dx = Math.abs(grayData[gi + 1] - grayData[gi - 1]);
+                const dy = Math.abs(grayData[gi + width] - grayData[gi - width]);
+                if (dx + dy > 30) cellEdges++;
+              }
               cellTotal++;
-              if (val > GLARE_CELL_BRIGHT) cellBright++;
             }
           }
 
-          const cellAvg = cellTotal > 0 ? cellSum / cellTotal : 0;
-          cellAvgs.push(cellAvg);
+          if (cellTotal > 0) {
+            const brightRatio = cellBright / cellTotal;
+            const desatRatio = cellDesat / cellTotal;
+            const edgeRatio = cellEdges / cellTotal;
 
-          if (cellTotal > 0 && (cellBright / cellTotal) > GLARE_CELL_PERCENT) {
-            glareCount++;
+            // Glare cell = very bright + washed out colors + no detail
+            if (brightRatio > 0.4 && desatRatio > 0.3 && edgeRatio < GLARE_EDGE_THRESHOLD) {
+              glareCells++;
+            }
           }
         }
       }
 
-      // Check if glare cells are significantly brighter than the overall average
-      const overallAvg = cellAvgs.reduce((a, b) => a + b, 0) / cellAvgs.length;
-      const brightCells = cellAvgs.filter(avg => avg > overallAvg + 30).length;
-
-      scores.glareCells = glareCount;
-      scores.brightCellsAboveAvg = brightCells;
-      scores.avgBrightness = Math.round(overallAvg);
-
-      // Flag glare if bright spot cells exist AND they are above average
-      if (glareCount >= 1 && brightCells >= 1 && !issues.includes('overexposed')) {
+      scores.glareCells = glareCells;
+      if (glareCells >= GLARE_MIN_CELLS && !issues.includes('overexposed')) {
         issues.push('glare');
       }
 
-      // --- 4. Dark image detection ---
-      let darkCount = 0;
-      for (let i = 0; i < totalPixels; i++) {
-        if (data[i] < 40) darkCount++;
-      }
-      const darkPercent = darkCount / totalPixels;
-      scores.dark = Math.round(darkPercent * 100);
+      // === LAYER 2: OCR confidence ===
+      try {
+        const worker = await getWorker();
+        const { data } = await worker.recognize(filePath);
 
-      if (darkPercent > 0.50) {
-        issues.push('too_dark');
+        const words = (data.words || []).filter(w => w.text.trim().length > 1);
+        scores.ocrWordCount = words.length;
+
+        if (words.length >= OCR_MIN_WORDS) {
+          const avgConf = words.reduce((sum, w) => sum + w.confidence, 0) / words.length;
+          scores.ocrConfidence = Math.round(avgConf);
+
+          if (avgConf < OCR_CONFIDENCE_THRESHOLD && !issues.includes('blurry')) {
+            issues.push('blurry');
+          }
+        } else if (words.length === 0 && !issues.includes('too_dark') && !issues.includes('overexposed')) {
+          // No text at all — likely very blurry or wrong image
+          issues.push('blurry');
+        }
+      } catch (ocrErr) {
+        // OCR failed — don't block, rely on pixel analysis only
+        scores.ocrError = true;
       }
 
     } catch (err) {
-      // If sharp can't process (e.g. PDF), skip quality check
+      // If sharp can't process (e.g. corrupted), skip
       return { issues: [], scores: {}, skipped: true };
+    } finally {
+      // Clean up temp PDF image
+      if (tmpPdfImage) try { fs.unlinkSync(tmpPdfImage); } catch {}
     }
 
     return { issues, scores };
@@ -157,9 +279,6 @@ const ImageQualityService = {
 
   /**
    * Analyze all uploaded image files from req.files.
-   * Returns a map of { fieldName: { issues, scores } } for files with issues.
-   * @param {object} files - req.files from multer
-   * @returns {Promise<object>} - { warnings: { fieldName: {issues, scores} }, hasIssues: boolean }
    */
   async analyzeAll(files) {
     const warnings = {};
@@ -169,10 +288,12 @@ const ImageQualityService = {
 
     for (const fieldName of Object.keys(files)) {
       for (const file of files[fieldName]) {
-        // Only analyze images, skip PDFs
-        if (!file.mimetype || !file.mimetype.startsWith('image/')) continue;
+        // Skip files that aren't images or PDFs
+        const isImage = file.mimetype && file.mimetype.startsWith('image/');
+        const isPdf = file.mimetype === 'application/pdf';
+        if (!isImage && !isPdf) continue;
 
-        const result = await this.analyze(file.path);
+        const result = await this.analyze(file.path, file.mimetype);
         if (result.issues.length > 0) {
           warnings[fieldName] = {
             issues: result.issues,

@@ -549,20 +549,21 @@ const SubmissionController = {
     try {
       if (!req.file) return res.json({ issues: [], ok: true });
 
-      // Skip non-image files
-      if (!req.file.mimetype || !req.file.mimetype.startsWith('image/')) {
-        // Clean up temp file
+      // Only check images and PDFs
+      const isImage = req.file.mimetype && req.file.mimetype.startsWith('image/');
+      const isPdf = req.file.mimetype === 'application/pdf';
+      if (!isImage && !isPdf) {
         try { fs.unlinkSync(req.file.path); } catch {}
         return res.json({ issues: [], ok: true });
       }
 
-      const result = await ImageQualityService.analyze(req.file.path);
+      const result = await ImageQualityService.analyze(req.file.path, req.file.mimetype);
 
       // Clean up temp file
       try { fs.unlinkSync(req.file.path); } catch {}
 
       const issueLabels = {
-        blurry: 'Gambar kabur (blurry)',
+        blurry: 'Gambar/dokumen kabur (blurry)',
         overexposed: 'Gambar terlalu terang (overexposed/flash)',
         glare: 'Ada pantulan cahaya (glare/flash)',
         too_dark: 'Gambar terlalu gelap',
