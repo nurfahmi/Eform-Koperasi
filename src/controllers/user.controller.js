@@ -2,7 +2,7 @@ const User = require('../models/user.model');
 const Activity = require('../models/activity.model');
 
 const ROLE_HIERARCHY = {
-  superadmin: ['admin', 'masteragent', 'subagent'],
+  superadmin: ['superadmin', 'admin', 'masteragent', 'subagent'],
   admin: ['masteragent', 'subagent'],
   masteragent: ['subagent'],
   subagent: []
