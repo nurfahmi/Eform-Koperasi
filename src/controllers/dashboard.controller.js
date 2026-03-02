@@ -55,7 +55,7 @@ const DashboardController = {
         performance,
         recentCases,
         referralCode: fullUser?.referral_code || null,
-        loanProducts: PdfService.getLoanProducts(),
+        loanProducts: PdfService.getEnabledProducts(),
         baseUrl: req.protocol + '://' + req.get('host'),
         page: 'main'
       });

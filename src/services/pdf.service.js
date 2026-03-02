@@ -167,6 +167,19 @@ const PdfService = {
     return loadRegistry();
   },
 
+  getEnabledProducts() {
+    return loadRegistry().filter(p => p.enabled !== false);
+  },
+
+  toggleProduct(key) {
+    const registry = loadRegistry();
+    const product = registry.find(t => t.key === key);
+    if (!product) throw new Error(`Product "${key}" not found`);
+    product.enabled = product.enabled === false ? true : false;
+    saveRegistry(registry);
+    return product.enabled;
+  },
+
   getProduct(key) {
     const registry = loadRegistry();
     // Check top-level

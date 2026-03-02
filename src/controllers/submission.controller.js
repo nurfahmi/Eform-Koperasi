@@ -57,7 +57,7 @@ const SubmissionController = {
     }
 
     const PdfService = require('../services/pdf.service');
-    const loanProducts = PdfService.getLoanProducts();
+    const loanProducts = PdfService.getEnabledProducts();
 
     res.render('public/submit', {
       layout: false,
@@ -82,7 +82,7 @@ const SubmissionController = {
     // Fetch agents list for admin/superadmin to assign referer
     const isAdmin = currentUser.role === 'superadmin' || currentUser.role === 'admin';
     const agents = isAdmin ? await User.findAgents() : [];
-    const loanProducts = PdfService.getLoanProducts();
+    const loanProducts = PdfService.getEnabledProducts();
 
     res.render('dashboard/submit', {
       layout: 'layouts/main',

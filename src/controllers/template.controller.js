@@ -223,6 +223,17 @@ const TemplateController = {
     }
   },
 
+  // POST /:key/toggle — enable/disable product
+  async toggleProduct(req, res) {
+    try {
+      const enabled = PdfService.toggleProduct(req.params.key);
+      req.flash('success', `Product ${enabled ? 'enabled' : 'disabled'}.`);
+    } catch (err) {
+      req.flash('error', 'Failed to toggle: ' + err.message);
+    }
+    res.redirect('/dashboard/settings/templates');
+  },
+
   // POST /:key/delete
   async deleteTemplate(req, res) {
     try {
