@@ -35,21 +35,43 @@ const TemplateController = {
     });
   },
 
-  // POST /upload — upload PDF, go straight to visual mapper
+  // POST /upload — create product (single or multi)
   async uploadTemplate(req, res) {
     let tempPath = null;
     try {
+      const productName = (req.body.product_name || '').trim();
+      const isMulti = req.body.multi_file === '1';
+
+      if (!productName) {
+        req.flash('error', 'Product name is required.');
+        return res.redirect('/dashboard/settings/templates');
+      }
+
+      let productKey = productName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      if (!productKey) productKey = 'product-' + Date.now();
+
+      if (isMulti) {
+        // Multi-file product — no PDF needed
+        try {
+          PdfService.addProduct(productKey, productName, null);
+        } catch {
+          productKey = productKey + '-' + Date.now();
+          PdfService.addProduct(productKey, productName, null);
+        }
+        if (req.file) {
+          tempPath = req.file.path;
+          fs.unlinkSync(tempPath);
+        }
+        req.flash('success', `"${productName}" created. Add sub-files below.`);
+        return res.redirect('/dashboard/settings/templates');
+      }
+
+      // Single-file product
       if (!req.file) {
-        req.flash('error', 'Sila pilih fail PDF.');
+        req.flash('error', 'Please upload a PDF file.');
         return res.redirect('/dashboard/settings/templates');
       }
       tempPath = req.file.path;
-      const originalName = req.file.originalname;
-
-      // Derive product name & key from filename
-      let productName = path.parse(originalName).name.replace(/[_-]+/g, ' ').toUpperCase().trim();
-      let productKey = productName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      if (!productKey) productKey = 'product-' + Date.now();
 
       const finalFilename = productKey + '.pdf';
       const finalPath = path.join(PdfService.TEMPLATES_DIR, finalFilename);
@@ -57,7 +79,6 @@ const TemplateController = {
       fs.unlinkSync(tempPath);
       tempPath = null;
 
-      // Register product (with empty fieldMap)
       try {
         PdfService.addProduct(productKey, productName, finalFilename);
       } catch {
@@ -74,6 +95,56 @@ const TemplateController = {
       req.flash('error', 'Upload failed: ' + err.message);
       res.redirect('/dashboard/settings/templates');
     }
+  },
+
+  // POST /:key/add-child — add child PDF to multi-file product
+  async addChild(req, res) {
+    let tempPath = null;
+    try {
+      const parentKey = req.params.key;
+      const childName = (req.body.child_name || '').trim();
+
+      if (!childName || !req.file) {
+        req.flash('error', 'Child name and PDF file are required.');
+        return res.redirect('/dashboard/settings/templates');
+      }
+      tempPath = req.file.path;
+
+      let childKey = parentKey + '-' + childName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      if (!childKey) childKey = parentKey + '-child-' + Date.now();
+
+      const finalFilename = childKey + '.pdf';
+      const finalPath = path.join(PdfService.TEMPLATES_DIR, finalFilename);
+      fs.copyFileSync(tempPath, finalPath);
+      fs.unlinkSync(tempPath);
+      tempPath = null;
+
+      try {
+        PdfService.addChild(parentKey, childKey, childName, finalFilename);
+      } catch {
+        childKey = childKey + '-' + Date.now();
+        PdfService.addChild(parentKey, childKey, childName, childKey + '.pdf');
+      }
+
+      req.flash('success', `"${childName}" added. Map the fields below.`);
+      res.redirect(`/dashboard/settings/templates/${childKey}/map`);
+    } catch (err) {
+      console.error('Add child error:', err);
+      if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      req.flash('error', 'Failed: ' + err.message);
+      res.redirect('/dashboard/settings/templates');
+    }
+  },
+
+  // POST /:parentKey/delete-child/:childKey
+  async deleteChild(req, res) {
+    try {
+      PdfService.removeChild(req.params.parentKey, req.params.childKey);
+      req.flash('success', 'Sub-product deleted.');
+    } catch (err) {
+      req.flash('error', 'Failed to delete.');
+    }
+    res.redirect('/dashboard/settings/templates');
   },
 
   // GET /:key/map — visual field mapper

@@ -1,5 +1,6 @@
 const Submission = require('../models/submission.model');
 const User = require('../models/user.model');
+const prisma = require('../config/db');
 
 const DashboardController = {
   async main(req, res) {
@@ -13,17 +14,26 @@ const DashboardController = {
       const totalSub = users.filter(u => u.role === 'subagent').length;
 
       // Performance table
-      const agents = users.filter(u => u.role === 'masteragent' || u.role === 'subagent');
-      const performance = [];
-      for (const agent of agents) {
-        const agentStats = await Submission.getStats(agent.id, agent.role);
-        performance.push({
-          name: agent.name,
-          role: agent.role,
-          total: agentStats.total,
-          pending: agentStats.pending,
-          approved: agentStats.approved
-        });
+      let performance = [];
+
+      if (currentUser.role === 'superadmin' || currentUser.role === 'admin') {
+        // Show master agents with total cases (own + subagents')
+        const masterAgents = users.filter(u => u.role === 'masteragent');
+        for (const ma of masterAgents) {
+          const totalCases = await prisma.submission.count({
+            where: { masteragent_id: ma.id, status: { not: 'draft' } }
+          });
+          performance.push({ name: ma.username, total: totalCases });
+        }
+      } else if (currentUser.role === 'masteragent') {
+        // Show own subagents
+        const subAgents = users.filter(u => u.role === 'subagent' && u.parent_id === currentUser.id);
+        for (const sa of subAgents) {
+          const totalCases = await prisma.submission.count({
+            where: { subagent_id: sa.id, status: { not: 'draft' } }
+          });
+          performance.push({ name: sa.username, total: totalCases });
+        }
       }
 
       // Recent cases (newest 10)
@@ -31,6 +41,8 @@ const DashboardController = {
 
       // Get full user record for referral code
       const fullUser = await User.findById(currentUser.id);
+
+      const PdfService = require('../services/pdf.service');
 
       res.render('dashboard/main', {
         layout: 'layouts/main',
@@ -43,6 +55,8 @@ const DashboardController = {
         performance,
         recentCases,
         referralCode: fullUser?.referral_code || null,
+        loanProducts: PdfService.getLoanProducts(),
+        baseUrl: req.protocol + '://' + req.get('host'),
         page: 'main'
       });
     } catch (err) {
@@ -58,7 +72,6 @@ const DashboardController = {
       if (currentUser.role !== 'superadmin' && currentUser.role !== 'admin') {
         return res.json({ count: 0 });
       }
-      const prisma = require('../config/db');
       const count = await prisma.submission.count({
         where: { status: 'pending', taken_by: null }
       });

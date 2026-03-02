@@ -1,7 +1,7 @@
 <div class="max-w-5xl mx-auto space-y-6">
   <div>
     <h2 class="text-xl font-bold">📄 Loan Products</h2>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Upload PDF forms — AI auto-maps fields, then review with visual mapper.</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage loan product PDFs. Single or multi-file products supported.</p>
   </div>
 
   <% if (typeof success !== 'undefined' && success && success.length) { %>
@@ -11,24 +11,40 @@
     <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm"><%= error %></div>
   <% } %>
 
-  <!-- Upload -->
+  <!-- Add Product -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
     <h3 class="text-base font-semibold mb-4">Add New Product</h3>
     <form action="/dashboard/settings/templates/upload" method="POST" enctype="multipart/form-data"
-      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='⏳ Processing...';">
-      <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-        <div class="flex-1">
-          <input type="file" name="pdf_file" accept=".pdf" required
+      onsubmit="this.querySelector('button[type=submit]').disabled=true; this.querySelector('button[type=submit]').innerHTML='⏳ Processing...';">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name</label>
+          <input type="text" name="product_name" required placeholder="e.g. KOPERASI TENTERA"
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="multiFileCheck" name="multi_file" value="1" class="sr-only peer" onchange="toggleMultiFile()">
+            <div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+          </label>
+          <span class="text-sm text-gray-600 dark:text-gray-400">Multiple file product</span>
+        </div>
+
+        <div id="singleFileField">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PDF File</label>
+          <input type="file" name="pdf_file" accept=".pdf" id="pdfFileInput"
             class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-700 dark:file:bg-primary-900/30 dark:file:text-primary-300">
         </div>
-        <button type="submit" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors whitespace-nowrap">
-          Upload
+
+        <button type="submit" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors">
+          Create Product
         </button>
       </div>
     </form>
   </div>
 
-  <!-- Products list -->
+  <!-- Products List -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
       <h3 class="text-base font-semibold">Products (<%= templates.length %>)</h3>
@@ -38,36 +54,155 @@
     <% } else { %>
       <div class="divide-y divide-gray-100 dark:divide-gray-800">
         <% templates.forEach(t => { %>
-          <div class="px-6 py-4 flex items-center justify-between">
-            <div>
-              <p class="text-sm font-semibold"><%= t.label %></p>
-              <p class="text-xs text-gray-400 mt-0.5"><%= t.file %></p>
+          <% if (!t.children || t.children.length === 0 && t.file) { %>
+            <!-- Single-file product -->
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold"><%= t.label %></p>
+                <p class="text-xs text-gray-400 mt-0.5"><%= t.file %></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <a href="/dashboard/settings/templates/<%= t.key %>/map"
+                  class="px-3 py-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
+                  Map Fields
+                </a>
+                <form action="/dashboard/settings/templates/<%= t.key %>/delete" method="POST" class="inline delete-form">
+                  <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                    Delete
+                  </button>
+                </form>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <a href="/dashboard/settings/templates/<%= t.key %>/map"
-                class="px-3 py-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
-                Map Fields
-              </a>
-              <form action="/dashboard/settings/templates/<%= t.key %>/delete" method="POST" class="inline delete-form">
-                <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                  Delete
-                </button>
-              </form>
+
+          <% } else { %>
+            <!-- Multi-file product -->
+            <div class="px-6 py-4">
+              <div class="flex items-center justify-between cursor-pointer" onclick="toggleChildren('<%= t.key %>')">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 child-chevron" data-key="<%= t.key %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                  <div>
+                    <p class="text-sm font-semibold"><%= t.label %></p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                      <span class="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs font-medium"><%= (t.children || []).length %> file<%= (t.children || []).length !== 1 ? 's' : '' %></span>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="event.stopPropagation(); openAddChildModal('<%= t.key %>', '<%= t.label.replace(/'/g, "\\'") %>')"
+                    class="px-3 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors">
+                    + Add File
+                  </button>
+                  <form action="/dashboard/settings/templates/<%= t.key %>/delete" method="POST" class="inline delete-form" onclick="event.stopPropagation()">
+                    <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                      Delete All
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Children rows -->
+              <div class="child-rows hidden mt-3 ml-6 space-y-2" data-parent="<%= t.key %>">
+                <% if (t.children && t.children.length > 0) { t.children.forEach(c => { %>
+                  <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                    <div class="flex items-center gap-2">
+                      <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                      <div>
+                        <p class="text-sm font-medium"><%= c.label %></p>
+                        <p class="text-xs text-gray-400"><%= c.file %></p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <a href="/dashboard/settings/templates/<%= c.key %>/map"
+                        class="px-3 py-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
+                        Map Fields
+                      </a>
+                      <form action="/dashboard/settings/templates/<%= t.key %>/delete-child/<%= c.key %>" method="POST" class="inline delete-form">
+                        <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                <% })} %>
+                <% if (!t.children || t.children.length === 0) { %>
+                  <p class="text-xs text-gray-400 py-2">No files yet. Click "Add File" to add sub-products.</p>
+                <% } %>
+              </div>
             </div>
-          </div>
+          <% } %>
         <% }) %>
       </div>
     <% } %>
   </div>
 </div>
 
+<!-- Add Child Modal -->
+<div id="addChildModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="document.getElementById('addChildModal').classList.add('hidden')"></div>
+  <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 w-full max-w-md mx-4 p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-base font-semibold">Add File to <span id="childParentLabel"></span></h3>
+      <button onclick="document.getElementById('addChildModal').classList.add('hidden')"
+        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="addChildForm" method="POST" action="" enctype="multipart/form-data" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File Name</label>
+        <input type="text" name="child_name" required placeholder="e.g. Borang Permohonan"
+          class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PDF File</label>
+        <input type="file" name="pdf_file" accept=".pdf" required
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-700 dark:file:bg-primary-900/30 dark:file:text-primary-300">
+      </div>
+      <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-xl text-sm transition-colors">
+        Upload & Map Fields
+      </button>
+    </form>
+  </div>
+</div>
+
 <script>
+function toggleMultiFile() {
+  const checked = document.getElementById('multiFileCheck').checked;
+  const fileField = document.getElementById('singleFileField');
+  const fileInput = document.getElementById('pdfFileInput');
+  fileField.style.display = checked ? 'none' : 'block';
+  if (checked) fileInput.removeAttribute('required');
+  else fileInput.setAttribute('required', '');
+}
+
+function toggleChildren(key) {
+  const rows = document.querySelector('.child-rows[data-parent="' + key + '"]');
+  const chevron = document.querySelector('.child-chevron[data-key="' + key + '"]');
+  if (rows) {
+    const isHidden = rows.classList.contains('hidden');
+    rows.classList.toggle('hidden', !isHidden);
+    if (chevron) chevron.style.transform = isHidden ? 'rotate(90deg)' : '';
+  }
+}
+
+function openAddChildModal(parentKey, parentLabel) {
+  document.getElementById('addChildForm').action = '/dashboard/settings/templates/' + parentKey + '/add-child';
+  document.getElementById('childParentLabel').textContent = parentLabel;
+  document.getElementById('addChildModal').classList.remove('hidden');
+}
+
 document.querySelectorAll('.delete-form').forEach(form => {
   form.addEventListener('submit', function(e) {
     e.preventDefault();
-    if (confirm('Delete this product? This cannot be undone.')) {
+    if (confirm('Delete this? This cannot be undone.')) {
       form.submit();
     }
   });
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('addChildModal')?.classList.add('hidden');
+  }
 });
 </script>

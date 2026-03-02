@@ -168,7 +168,27 @@ const PdfService = {
   },
 
   getProduct(key) {
-    return loadRegistry().find(t => t.key === key) || null;
+    const registry = loadRegistry();
+    // Check top-level
+    const top = registry.find(t => t.key === key);
+    if (top) return top;
+    // Check children
+    for (const p of registry) {
+      if (p.children) {
+        const child = p.children.find(c => c.key === key);
+        if (child) return child;
+      }
+    }
+    return null;
+  },
+
+  // Get parent product that contains a child key
+  getParentOf(childKey) {
+    const registry = loadRegistry();
+    for (const p of registry) {
+      if (p.children && p.children.find(c => c.key === childKey)) return p;
+    }
+    return null;
   },
 
   addProduct(key, label, filename) {
@@ -176,7 +196,38 @@ const PdfService = {
     if (registry.find(t => t.key === key)) {
       throw new Error(`Product key "${key}" already exists`);
     }
-    registry.push({ key, label, file: filename, fieldMap: {} });
+    if (filename) {
+      // Single-file product
+      registry.push({ key, label, file: filename, fieldMap: {} });
+    } else {
+      // Multi-file product (no direct file)
+      registry.push({ key, label, file: null, fieldMap: null, children: [] });
+    }
+    saveRegistry(registry);
+  },
+
+  addChild(parentKey, childKey, childLabel, filename) {
+    const registry = loadRegistry();
+    const parent = registry.find(t => t.key === parentKey);
+    if (!parent) throw new Error(`Parent product "${parentKey}" not found`);
+    if (!parent.children) parent.children = [];
+    if (parent.children.find(c => c.key === childKey)) {
+      throw new Error(`Child key "${childKey}" already exists`);
+    }
+    parent.children.push({ key: childKey, label: childLabel, file: filename, fieldMap: {} });
+    saveRegistry(registry);
+  },
+
+  removeChild(parentKey, childKey) {
+    const registry = loadRegistry();
+    const parent = registry.find(t => t.key === parentKey);
+    if (!parent || !parent.children) return;
+    const child = parent.children.find(c => c.key === childKey);
+    if (child) {
+      const filePath = path.join(TEMPLATES_DIR, child.file);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+    parent.children = parent.children.filter(c => c.key !== childKey);
     saveRegistry(registry);
   },
 
@@ -184,8 +235,18 @@ const PdfService = {
     let registry = loadRegistry();
     const item = registry.find(t => t.key === key);
     if (item) {
-      const filePath = path.join(TEMPLATES_DIR, item.file);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      // Delete main file
+      if (item.file) {
+        const filePath = path.join(TEMPLATES_DIR, item.file);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+      // Delete children files
+      if (item.children) {
+        item.children.forEach(c => {
+          const fp = path.join(TEMPLATES_DIR, c.file);
+          if (fs.existsSync(fp)) fs.unlinkSync(fp);
+        });
+      }
     }
     registry = registry.filter(t => t.key !== key);
     saveRegistry(registry);
@@ -198,7 +259,17 @@ const PdfService = {
    */
   saveFieldMap(key, fieldMap) {
     const registry = loadRegistry();
-    const product = registry.find(t => t.key === key);
+    // Check top-level
+    let product = registry.find(t => t.key === key);
+    if (!product) {
+      // Check children
+      for (const p of registry) {
+        if (p.children) {
+          const child = p.children.find(c => c.key === key);
+          if (child) { product = child; break; }
+        }
+      }
+    }
     if (!product) throw new Error(`Product "${key}" not found`);
     product.fieldMap = fieldMap;
     saveRegistry(registry);

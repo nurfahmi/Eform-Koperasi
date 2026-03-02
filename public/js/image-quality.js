@@ -98,13 +98,15 @@
   }
 
   function init() {
+    // Only check IC fields for image quality/OCR
+    const icFields = ['ic_depan', 'ic_belakang'];
     const inputs = document.querySelectorAll('input[type="file"]');
     inputs.forEach((input) => {
+      if (!icFields.includes(input.name)) return;
       input.addEventListener('change', (e) => {
         removeWarning(input);
         const file = e.target.files[0];
         if (!file) return;
-        // Check images and PDFs
         if (!file.type.startsWith('image/') && file.type !== 'application/pdf') return;
         checkImage(input, file);
       });

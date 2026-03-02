@@ -52,13 +52,14 @@ const SettingController = {
   async updateSettings(req, res) {
     try {
       const { site_name, site_short, primary_color, accent_color,
-        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload } = req.body;
+        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload, upload_dir } = req.body;
       const updates = { site_name, site_short, primary_color, accent_color,
         iq_enabled: iq_enabled || 'false',
         iq_blur_threshold: iq_blur_threshold || '50',
         iq_bright_threshold: iq_bright_threshold || '245',
         iq_bright_percent: iq_bright_percent || '40',
-        iq_block_upload: iq_block_upload || 'false'
+        iq_block_upload: iq_block_upload || 'false',
+        upload_dir: upload_dir || ''
       };
 
       // Handle logo upload
@@ -78,6 +79,35 @@ const SettingController = {
       console.error('Update settings error:', err);
       req.flash('error', 'Failed to save settings.');
       res.redirect('/dashboard/settings');
+    }
+  },
+
+  async browseDirectory(req, res) {
+    try {
+      if (req.session.user.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      const dirPath = req.query.path || '/';
+      const resolved = path.resolve(dirPath);
+
+      if (!fs.existsSync(resolved)) {
+        return res.json({ path: resolved, dirs: [], error: 'Path does not exist' });
+      }
+      const stat = fs.statSync(resolved);
+      if (!stat.isDirectory()) {
+        return res.json({ path: resolved, dirs: [], error: 'Not a directory' });
+      }
+
+      const entries = fs.readdirSync(resolved, { withFileTypes: true });
+      const dirs = entries
+        .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+        .map(e => e.name)
+        .sort();
+
+      const parent = path.dirname(resolved);
+      res.json({ path: resolved, parent: parent !== resolved ? parent : null, dirs });
+    } catch (err) {
+      res.json({ path: req.query.path, dirs: [], error: err.message });
     }
   }
 };

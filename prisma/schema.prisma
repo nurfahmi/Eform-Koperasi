@@ -9,8 +9,8 @@ datasource db {
 
 model User {
   id            String   @id @default(uuid())
-  name          String   @db.VarChar(100)
-  email         String   @unique @db.VarChar(150)
+  username      String   @unique @db.VarChar(100)
+  password      String   @db.VarChar(255)
   role          UserRole
   referral_code String?  @unique @db.VarChar(20)
   parent_id     String?  @db.VarChar(36)
@@ -37,6 +37,7 @@ model Submission {
   masteragent_id  String?          @db.VarChar(36)
   referral_code   String?          @db.VarChar(20)
   status          SubmissionStatus @default(pending)
+  product_key     String?          @db.VarChar(100)
   taken_by        String?          @db.VarChar(36)
   taken_at        DateTime?
   released_at     DateTime?
@@ -50,8 +51,22 @@ model Submission {
 
   details SubmissionDetail?
   files   SubmissionFile[]
+  adminFiles AdminCaseFile[]
 
   @@map("submissions")
+}
+
+model AdminCaseFile {
+  id            Int      @id @default(autoincrement())
+  submission_id String   @db.VarChar(36)
+  label         String   @db.VarChar(200)
+  file_path     String   @db.VarChar(500)
+  original_name String   @db.VarChar(300)
+  uploaded_at   DateTime @default(now())
+
+  submission Submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+
+  @@map("admin_case_files")
 }
 
 model SubmissionDetail {

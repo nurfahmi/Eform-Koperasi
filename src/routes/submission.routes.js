@@ -15,6 +15,7 @@ router.post('/submit-new', authMiddleware, upload.fields(SubmissionController.FI
 router.get('/cases', authMiddleware, SubmissionController.listCases);
 router.get('/cases/:id', authMiddleware, SubmissionController.viewCase);
 router.post('/cases/:id/take', authMiddleware, SubmissionController.takeCase);
+router.post('/cases/:id/update-product', authMiddleware, SubmissionController.updateProduct);
 router.post('/cases/:id/release', authMiddleware, SubmissionController.releaseCase);
 router.get('/taken-cases', authMiddleware, SubmissionController.listTakenCases);
 router.get('/drafts', authMiddleware, SubmissionController.listDrafts);
@@ -22,6 +23,15 @@ router.get('/drafts/:id/edit', authMiddleware, SubmissionController.editDraft);
 router.post('/drafts/:id/delete', authMiddleware, SubmissionController.deleteDraft);
 router.get('/files/:fileId/download', authMiddleware, SubmissionController.downloadFile);
 router.get('/cases/:id/pdf/:template', authMiddleware, SubmissionController.generatePdf);
+
+// Admin case file routes (superadmin only)
+router.post('/cases/:id/admin-files', authMiddleware, upload.single('file'), SubmissionController.uploadAdminFile);
+router.get('/admin-files/:fileId/download', authMiddleware, SubmissionController.downloadAdminFile);
+router.post('/cases/:id/admin-files/:fileId/delete', authMiddleware, SubmissionController.deleteAdminFile);
+
+// Download all routes
+router.get('/cases/:id/download-all-files', authMiddleware, SubmissionController.downloadAllFiles);
+router.get('/cases/:id/download-all-admin-files', authMiddleware, SubmissionController.downloadAllAdminFiles);
 
 module.exports = router;
 

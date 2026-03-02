@@ -117,5 +117,25 @@
     "label": "KOMUJA (COOP) NEW FORM",
     "file": "komuja-coop-new-form.pdf",
     "fieldMap": {}
+  },
+  {
+    "key": "test",
+    "label": "test",
+    "file": null,
+    "fieldMap": null,
+    "children": [
+      {
+        "key": "test-test1",
+        "label": "test1",
+        "file": "test-test1.pdf",
+        "fieldMap": {}
+      },
+      {
+        "key": "test-test2",
+        "label": "test2",
+        "file": "test-test2.pdf",
+        "fieldMap": {}
+      }
+    ]
   }
 ]

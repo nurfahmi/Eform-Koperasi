@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../config/db');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
 // GET /setup - Show setup form (only if no superadmin exists)
@@ -26,17 +27,19 @@ router.post('/', async (req, res) => {
     return res.redirect('/auth/login');
   }
 
-  const { name, email } = req.body;
-  if (!name || !email) {
-    req.flash('error', 'Name and email are required.');
+  const { username, password } = req.body;
+  if (!username || !password) {
+    req.flash('error', 'Username and password are required.');
     return res.redirect('/setup');
   }
+
+  const hashed = await bcrypt.hash(password, 10);
 
   await prisma.user.create({
     data: {
       id: uuidv4(),
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
+      username: username.trim().toLowerCase(),
+      password: hashed,
       role: 'superadmin'
     }
   });

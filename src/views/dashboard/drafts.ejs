@@ -18,12 +18,12 @@
           <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="draftsTableBody">
         <% if (drafts.length === 0) { %>
           <tr><td colspan="3" class="px-3 sm:px-6 py-8 text-center text-gray-400">No drafts</td></tr>
         <% } %>
         <% drafts.forEach(d => { %>
-          <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <tr class="draft-row border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
             <td class="px-3 sm:px-6 py-3 font-medium"><%= d.applicant_name %></td>
             <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell"><%= new Date(d.created_at).toLocaleString() %></td>
             <td class="px-3 sm:px-6 py-3 text-center space-x-2">
@@ -37,4 +37,6 @@
       </tbody>
     </table>
   </div>
+  <%- include('../partials/pagination', { tableId: 'draftsTableBody', perPage: 10, rowClass: 'draft-row' }) %>
 </div>
+<%- include('../partials/pagination-script') %>

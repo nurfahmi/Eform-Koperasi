@@ -1,0 +1,11 @@
+<!-- Pagination Controls -->
+<div class="pagination-controls px-4 sm:px-6 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between" data-table-id="<%= tableId %>" data-per-page="<%= perPage || 10 %>" data-row-class="<%= rowClass %>">
+  <p class="text-xs text-gray-500 dark:text-gray-400">
+    Showing <span class="pg-from font-medium">0</span>–<span class="pg-to font-medium">0</span> of <span class="pg-total font-medium">0</span>
+  </p>
+  <div class="flex items-center gap-1">
+    <button type="button" class="pg-prev px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>← Prev</button>
+    <span class="pg-info text-xs text-gray-500 dark:text-gray-400 px-2"></span>
+    <button type="button" class="pg-next px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>Next →</button>
+  </div>
+</div>

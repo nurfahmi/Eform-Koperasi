@@ -98,11 +98,14 @@
         </div>
       </div>
 
-      <!-- Image Quality Settings -->
+      <!-- Image Quality Settings (Collapsible) -->
       <div class="border-t border-gray-200 dark:border-gray-700 pt-5 mt-5">
-        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">📷 Image Quality Check</h4>
-        
-        <div class="space-y-4">
+        <details>
+          <summary class="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+            📷 Image Quality Check
+            <svg class="w-4 h-4 transition-transform details-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="mt-4 space-y-4">
           <div class="flex items-center justify-between">
             <div>
               <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Image Quality Check</label>
@@ -169,14 +172,61 @@
             </div>
             <p class="text-xs text-gray-400 mt-1">% of image that must be bright to flag as overexposed</p>
           </div>
+          </div>
+        </details>
+      </div>
+
+      <% if (user.role === 'superadmin') { %>
+      <!-- Storage / Upload Directory -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-5 mt-5">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">📁 Storage Directory</h4>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Directory Path</label>
+          <div class="flex gap-2">
+            <input type="text" name="upload_dir" id="uploadDirInput" value="<%= settings.upload_dir || '' %>" placeholder="Leave empty for default (./uploads)"
+              class="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500 font-mono">
+            <button type="button" id="browseDirBtn"
+              class="shrink-0 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-colors">
+              Browse
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Absolute path for file storage. e.g. <code>/Volumes/ExternalSSD/uploads</code>. Leave empty to use the default <code>./uploads</code> folder.</p>
+          <p class="text-xs text-gray-400 mt-0.5">Files are organized as: <code>{upload_dir}/submissions/{YYYY-MM}/{IC}/</code></p>
         </div>
       </div>
+      <% } %>
 
       <button type="submit"
         class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-xl text-sm transition-colors">
         Save Settings
       </button>
     </form>
+  </div>
+</div>
+
+<!-- Directory Browser Modal -->
+<div id="dirBrowserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-lg mx-4 max-h-[70vh] flex flex-col">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">📁 Browse Server Directories</h3>
+      <button type="button" id="closeDirBrowser" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">&times;</button>
+    </div>
+    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+      <p id="dirCurrentPath" class="text-xs font-mono text-gray-500 dark:text-gray-400 truncate">/</p>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 py-2" id="dirListing">
+      <p class="text-sm text-gray-400 py-4 text-center">Loading...</p>
+    </div>
+    <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+      <button type="button" id="selectDirBtn"
+        class="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 rounded-xl text-sm transition-colors">
+        Select This Folder
+      </button>
+      <button type="button" id="cancelDirBtn"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-colors">
+        Cancel
+      </button>
+    </div>
   </div>
 </div>
 
@@ -197,4 +247,86 @@ document.querySelector('input[name="site_short"]').addEventListener('input', fun
   var logo = document.getElementById('previewLogo');
   if (logo) logo.textContent = e.target.value.charAt(0);
 });
+
+// --- Directory Browser ---
+(function() {
+  var modal = document.getElementById('dirBrowserModal');
+  var browseBtn = document.getElementById('browseDirBtn');
+  var closeBtn = document.getElementById('closeDirBrowser');
+  var cancelBtn = document.getElementById('cancelDirBtn');
+  var selectBtn = document.getElementById('selectDirBtn');
+  var listing = document.getElementById('dirListing');
+  var currentPathEl = document.getElementById('dirCurrentPath');
+  var input = document.getElementById('uploadDirInput');
+  if (!browseBtn) return;
+
+  var currentDir = '/';
+
+  function openModal() {
+    currentDir = input.value.trim() || '/';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    loadDir(currentDir);
+  }
+  function closeModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function loadDir(dirPath) {
+    currentDir = dirPath;
+    currentPathEl.textContent = dirPath;
+    listing.innerHTML = '<p class="text-sm text-gray-400 py-4 text-center">Loading...</p>';
+
+    fetch('/dashboard/settings/browse-dir?path=' + encodeURIComponent(dirPath))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        currentDir = data.path;
+        currentPathEl.textContent = data.path;
+
+        if (data.error) {
+          listing.innerHTML = '<p class="text-sm text-red-400 py-4 text-center">' + data.error + '</p>';
+          return;
+        }
+
+        var html = '';
+        // Parent directory link
+        if (data.parent) {
+          html += '<button type="button" onclick="window._browseDir(\'' + data.parent.replace(/'/g, "\\'") + '\')" ' +
+            'class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-500">' +
+            '<span>⬆️</span> <span>..</span></button>';
+        }
+
+        if (data.dirs.length === 0 && !data.parent) {
+          html += '<p class="text-sm text-gray-400 py-4 text-center">No folders found</p>';
+        }
+
+        data.dirs.forEach(function(d) {
+          var fullPath = data.path === '/' ? '/' + d : data.path + '/' + d;
+          html += '<button type="button" onclick="window._browseDir(\'' + fullPath.replace(/'/g, "\\'") + '\')" ' +
+            'class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-700 dark:text-gray-300">' +
+            '<span>📁</span> <span>' + d + '</span></button>';
+        });
+
+        listing.innerHTML = html;
+      })
+      .catch(function() {
+        listing.innerHTML = '<p class="text-sm text-red-400 py-4 text-center">Failed to load</p>';
+      });
+  }
+
+  window._browseDir = loadDir;
+
+  browseBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  selectBtn.addEventListener('click', function() {
+    input.value = currentDir;
+    closeModal();
+  });
+
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+})();
 </script>

@@ -21,7 +21,7 @@ const ReferralService = {
   async getAgentName(referralCode) {
     if (!referralCode) return null;
     const user = await User.findByReferralCode(referralCode);
-    return user ? user.name : null;
+    return user ? user.username : null;
   }
 };
 

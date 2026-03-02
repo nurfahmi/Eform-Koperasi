@@ -58,7 +58,27 @@
 
     <form method="POST" action="/submit" enctype="multipart/form-data" class="space-y-6">
       <input type="hidden" name="referral_code" value="<%= ref %>">
-      <!-- Section 1: Maklumat Pemohon -->
+
+      <!-- Product Selection -->
+      <% if (typeof loanProducts !== 'undefined' && loanProducts.length > 0) { %>
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <h2 class="text-lg font-semibold mb-3">Produk Pinjaman</h2>
+        <% if (typeof selectedProduct !== 'undefined' && selectedProduct) { %>
+          <input type="hidden" name="product_key" value="<%= selectedProduct %>">
+          <p class="text-sm font-medium text-primary-600 dark:text-primary-400">
+            <%= loanProducts.find(p => p.key === selectedProduct)?.label || selectedProduct %>
+          </p>
+        <% } else { %>
+          <select name="product_key" required
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">-- Pilih Produk --</option>
+            <% loanProducts.forEach(p => { %>
+              <option value="<%= p.key %>"><%= p.label %></option>
+            <% }) %>
+          </select>
+        <% } %>
+      </div>
+      <% } %>
       <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
         <h2 class="text-lg font-semibold mb-4">1. Maklumat Pemohon</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -227,19 +247,23 @@
         <p class="text-xs text-gray-400 mb-4">Format: JPG, PNG, PDF | Max: 5MB per file</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC (Depan & Belakang)</label>
-            <input type="file" name="ic" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Depan</label>
+            <input type="file" name="ic_depan" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 1</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Belakang</label>
+            <input type="file" name="ic_belakang" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 1</label>
             <input type="file" name="payslip1" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 2</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 2</label>
             <input type="file" name="payslip2" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 3</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 3</label>
             <input type="file" name="payslip3" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
@@ -262,9 +286,10 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Settlement Letter</label>
             <input type="file" name="settlement_letter" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
-          <div>
+          <div class="sm:col-span-2">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lain-lain (Other)</label>
-            <input type="file" name="other_doc" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+            <input type="file" name="other_doc" accept=".jpg,.jpeg,.png,.pdf" multiple class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+            <p class="text-xs text-gray-400 mt-1">Boleh muat naik lebih dari satu fail</p>
           </div>
         </div>
       </div>

@@ -37,7 +37,7 @@ const UserController = {
   async createUser(req, res) {
     try {
       const currentUser = req.session.user;
-      const { name, email, role, parent_id } = req.body;
+      const { username, password, role, parent_id } = req.body;
 
       const allowed = ROLE_HIERARCHY[currentUser.role] || [];
       if (!allowed.includes(role)) {
@@ -45,9 +45,14 @@ const UserController = {
         return res.redirect('/dashboard/users');
       }
 
-      const existing = await User.findByEmail(email.trim().toLowerCase());
+      if (!username || !password) {
+        req.flash('error', 'Username and password are required.');
+        return res.redirect('/dashboard/users');
+      }
+
+      const existing = await User.findByUsername(username.trim().toLowerCase());
       if (existing) {
-        req.flash('error', 'A user with this email already exists.');
+        req.flash('error', 'A user with this username already exists.');
         return res.redirect('/dashboard/users');
       }
 
@@ -57,8 +62,8 @@ const UserController = {
       }
 
       const newUser = await User.create({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
+        username: username.trim().toLowerCase(),
+        password,
         role,
         parent_id: assignedParent,
         created_by: currentUser.id
@@ -68,7 +73,7 @@ const UserController = {
         user_id: currentUser.id,
         action: 'CREATE_USER',
         target_id: newUser.id,
-        description: `Created ${role}: ${name}`
+        description: `Created ${role}: ${username}`
       });
 
       req.flash('success', 'User created successfully.');
@@ -112,7 +117,7 @@ const UserController = {
     try {
       const currentUser = req.session.user;
       const { id } = req.params;
-      const { name, email, role, parent_id } = req.body;
+      const { username, password, role, parent_id } = req.body;
 
       if (currentUser.role !== 'superadmin' && currentUser.role !== 'admin') {
         req.flash('error', 'Not authorized.');
@@ -130,25 +135,29 @@ const UserController = {
         return res.redirect('/dashboard/users');
       }
 
-      // Check email uniqueness (exclude current user)
-      const existing = await User.findByEmail(email.trim().toLowerCase());
+      // Check username uniqueness (exclude current user)
+      const existing = await User.findByUsername(username.trim().toLowerCase());
       if (existing && existing.id !== id) {
-        req.flash('error', 'A user with this email already exists.');
+        req.flash('error', 'A user with this username already exists.');
         return res.redirect('/dashboard/users');
       }
 
       await User.update(id, {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
+        username: username.trim().toLowerCase(),
         role,
         parent_id: role === 'subagent' ? (parent_id || null) : null
       });
+
+      // Update password only if provided
+      if (password && password.trim()) {
+        await User.updatePassword(id, password);
+      }
 
       await Activity.log({
         user_id: currentUser.id,
         action: 'EDIT_USER',
         target_id: id,
-        description: `Updated user: ${name} (${role})`
+        description: `Updated user: ${username} (${role})`
       });
 
       req.flash('success', 'User updated successfully.');
@@ -179,8 +188,8 @@ const UserController = {
       req.session.originalUser = currentUser;
       req.session.user = {
         id: target.id,
-        name: target.name,
-        email: target.email,
+        name: target.username,
+        username: target.username,
         role: target.role,
         parent_id: target.parent_id
       };
@@ -189,10 +198,10 @@ const UserController = {
         user_id: currentUser.id,
         action: 'IMPERSONATE',
         target_id: target.id,
-        description: `Impersonating ${target.name} (${target.role})`
+        description: `Impersonating ${target.username} (${target.role})`
       });
 
-      req.flash('success', `Now viewing as ${target.name}`);
+      req.flash('success', `Now viewing as ${target.username}`);
       res.redirect('/dashboard');
     } catch (err) {
       console.error('Impersonate error:', err);
@@ -207,7 +216,7 @@ const UserController = {
         return res.redirect('/dashboard');
       }
 
-      const impersonatedName = req.session.user.name;
+      const impersonatedName = req.session.user.username;
       req.session.user = req.session.originalUser;
       req.session.originalUser = null;
 

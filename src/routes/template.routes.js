@@ -12,6 +12,8 @@ router.get('/:key/map', ...adminOnly, TemplateController.mapFields);
 router.post('/:key/map', ...adminOnly, TemplateController.saveMap);
 router.get('/:key/pdf', ...adminOnly, TemplateController.servePdf);
 router.post('/:key/delete', ...adminOnly, TemplateController.deleteTemplate);
+router.post('/:key/add-child', ...adminOnly, TemplateController.uploadMiddleware, TemplateController.addChild);
+router.post('/:parentKey/delete-child/:childKey', ...adminOnly, TemplateController.deleteChild);
 router.post('/:key/ai-suggest', ...adminOnly, TemplateController.aiSuggest);
 
 module.exports = router;

@@ -15,22 +15,28 @@ const AuthController = {
 
   async login(req, res) {
     try {
-      const { email } = req.body;
-      if (!email) {
-        req.flash('error', 'Email is required.');
+      const { username, password } = req.body;
+      if (!username || !password) {
+        req.flash('error', 'Username and password are required.');
         return res.redirect('/auth/login');
       }
 
-      const user = await User.findByEmail(email.trim().toLowerCase());
+      const user = await User.findByUsername(username.trim().toLowerCase());
       if (!user) {
-        req.flash('error', 'No account found with this email.');
+        req.flash('error', 'Invalid username or password.');
+        return res.redirect('/auth/login');
+      }
+
+      const valid = await User.verifyPassword(password, user.password);
+      if (!valid) {
+        req.flash('error', 'Invalid username or password.');
         return res.redirect('/auth/login');
       }
 
       req.session.user = {
         id: user.id,
-        name: user.name,
-        email: user.email,
+        name: user.username,
+        username: user.username,
         role: user.role,
         parent_id: user.parent_id
       };

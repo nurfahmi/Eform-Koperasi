@@ -5,6 +5,13 @@
   <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-3 rounded-xl mb-6"><%= error %></div>
 <% } %>
 
+<%
+  // Group users: non-agents, then masteragents with their subagents
+  const admins = users.filter(u => u.role === 'superadmin' || u.role === 'admin');
+  const masters = users.filter(u => u.role === 'masteragent');
+  const subs = users.filter(u => u.role === 'subagent');
+%>
+
 <!-- User List -->
 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
   <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
@@ -18,53 +25,133 @@
     <% } %>
   </div>
   <div class="overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm" id="userTable">
       <thead>
         <tr class="border-b border-gray-200 dark:border-gray-800">
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Name</th>
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Email</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Username</th>
           <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Role</th>
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Referral</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Info</th>
           <% if (user.role === 'superadmin' || user.role === 'admin') { %>
           <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Actions</th>
           <% } %>
         </tr>
       </thead>
       <tbody>
-        <% users.forEach(u => { %>
-          <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-            <td class="px-3 sm:px-6 py-3 font-medium"><%= u.name %></td>
-            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= u.email %></td>
-            <td class="px-3 sm:px-6 py-3">
-              <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize
-                <% if (u.role === 'superadmin') { %>bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300
-                <% } else if (u.role === 'admin') { %>bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300
-                <% } else if (u.role === 'masteragent') { %>bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300
-                <% } else { %>bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400<% } %>">
-                <%= u.role %>
-              </span>
-            </td>
-            <td class="px-3 sm:px-6 py-3 font-mono text-xs hidden sm:table-cell"><%= u.referral_code || '-' %></td>
-            <% if (user.role === 'superadmin' || user.role === 'admin') { %>
-            <td class="px-3 sm:px-6 py-3 text-center">
-              <div class="flex items-center justify-center gap-1.5 flex-wrap">
-              <% if (u.id !== user.id) { %>
-              <button type="button" onclick="openEditModal('<%= u.id %>', '<%= u.name.replace(/'/g, "\\'") %>', '<%= u.email %>', '<%= u.role %>', '<%= u.parent_id || '' %>')"
-                class="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">Edit</button>
-              <% if (user.role === 'superadmin') { %>
-              <form method="POST" action="/dashboard/users/impersonate/<%= u.id %>" class="inline">
-                <button type="submit" class="px-2.5 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg text-xs font-medium hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors">Impersonate</button>
-              </form>
-              <% } %>
-              <form method="POST" action="/dashboard/users/delete/<%= u.id %>" class="inline" onsubmit="return confirm('Delete this user?')">
-                <button type="submit" class="px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">Delete</button>
-              </form>
-              <% } %>
-              </div>
-            </td>
-            <% } %>
-          </tr>
-        <% }) %>
+        <% if (user.role === 'masteragent') { %>
+          <!-- Masteragent view: simple flat list of subagents only -->
+          <% users.filter(u => u.role === 'subagent').forEach(u => { %>
+            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <td class="px-3 sm:px-6 py-3 font-medium"><%= u.username %></td>
+              <td class="px-3 sm:px-6 py-3">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize
+                  <% if (u.role === 'masteragent') { %>bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300
+                  <% } else { %>bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400<% } %>">
+                  <%= u.role %>
+                </span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 text-gray-400 text-xs hidden sm:table-cell">-</td>
+            </tr>
+          <% }) %>
+
+        <% } else { %>
+          <!-- Admin/Superadmin view: nested stacked table -->
+          <!-- Admin/Superadmin rows -->
+          <% admins.forEach(u => { %>
+            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <td class="px-3 sm:px-6 py-3 font-medium"><%= u.username %></td>
+              <td class="px-3 sm:px-6 py-3">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize
+                  <% if (u.role === 'superadmin') { %>bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300
+                  <% } else { %>bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300<% } %>">
+                  <%= u.role %>
+                </span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 text-gray-400 text-xs hidden sm:table-cell">-</td>
+              <td class="px-3 sm:px-6 py-3 text-center">
+                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                <% if (u.id !== user.id) { %>
+                <button type="button" onclick="openEditModal('<%= u.id %>', '<%= u.username %>', '<%= u.role %>', '')"
+                  class="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">Edit</button>
+                <% if (user.role === 'superadmin') { %>
+                <form method="POST" action="/dashboard/users/impersonate/<%= u.id %>" class="inline">
+                  <button type="submit" class="px-2.5 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg text-xs font-medium hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors">Impersonate</button>
+                </form>
+                <% } %>
+                <form method="POST" action="/dashboard/users/delete/<%= u.id %>" class="inline" onsubmit="return confirm('Delete this user?')">
+                  <button type="submit" class="px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">Delete</button>
+                </form>
+                <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+
+          <!-- Master Agent rows (collapsible) -->
+          <% masters.forEach(ma => {
+            const maSubs = subs.filter(s => s.parent_id === ma.id);
+          %>
+            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ma-row" data-ma-id="<%= ma.id %>" onclick="toggleSubagents('<%= ma.id %>')">
+              <td class="px-3 sm:px-6 py-3 font-medium">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 ma-chevron" data-ma-id="<%= ma.id %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                  <%= ma.username %>
+                </div>
+              </td>
+              <td class="px-3 sm:px-6 py-3">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">masteragent</span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 text-gray-400 text-xs hidden sm:table-cell">
+                <span class="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium"><%= maSubs.length %> sub agent<%= maSubs.length !== 1 ? 's' : '' %></span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 text-center">
+                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                <% if (ma.id !== user.id) { %>
+                <button type="button" onclick="event.stopPropagation(); openEditModal('<%= ma.id %>', '<%= ma.username %>', '<%= ma.role %>', '')"
+                  class="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">Edit</button>
+                <% if (user.role === 'superadmin') { %>
+                <form method="POST" action="/dashboard/users/impersonate/<%= ma.id %>" class="inline" onclick="event.stopPropagation()">
+                  <button type="submit" class="px-2.5 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg text-xs font-medium hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors">Impersonate</button>
+                </form>
+                <% } %>
+                <form method="POST" action="/dashboard/users/delete/<%= ma.id %>" class="inline" onsubmit="return confirm('Delete this user?')" onclick="event.stopPropagation()">
+                  <button type="submit" class="px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">Delete</button>
+                </form>
+                <% } %>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Sub Agent rows (hidden by default) -->
+            <% maSubs.forEach(sa => { %>
+            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors sa-row hidden bg-gray-50/50 dark:bg-gray-800/30" data-parent-ma="<%= ma.id %>">
+              <td class="px-3 sm:px-6 py-3 font-medium pl-10 sm:pl-14">
+                <div class="flex items-center gap-2">
+                  <div class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                  <%= sa.username %>
+                </div>
+              </td>
+              <td class="px-3 sm:px-6 py-3">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-medium capitalize bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">subagent</span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 text-gray-400 text-xs hidden sm:table-cell"><%= ma.username %></td>
+              <td class="px-3 sm:px-6 py-3 text-center">
+                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                <button type="button" onclick="openEditModal('<%= sa.id %>', '<%= sa.username %>', '<%= sa.role %>', '<%= sa.parent_id || '' %>')"
+                  class="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors">Edit</button>
+                <% if (user.role === 'superadmin') { %>
+                <form method="POST" action="/dashboard/users/impersonate/<%= sa.id %>" class="inline">
+                  <button type="submit" class="px-2.5 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg text-xs font-medium hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors">Impersonate</button>
+                </form>
+                <% } %>
+                <form method="POST" action="/dashboard/users/delete/<%= sa.id %>" class="inline" onsubmit="return confirm('Delete this user?')">
+                  <button type="submit" class="px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">Delete</button>
+                </form>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+          <% }) %>
+        <% } %>
       </tbody>
     </table>
   </div>
@@ -85,13 +172,13 @@
 
     <form method="POST" action="/dashboard/users" class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-        <input type="text" name="name" required
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+        <input type="text" name="username" required
           class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-        <input type="email" name="email" required
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+        <input type="password" name="password" required
           class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
       </div>
       <div>
@@ -116,8 +203,8 @@
             <div id="maDropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
               <% if (typeof masterAgents !== 'undefined') { masterAgents.forEach(ma => { %>
                 <div class="ma-option px-4 py-2.5 text-sm hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer transition-colors"
-                  data-id="<%= ma.id %>" data-name="<%= ma.name %>" data-ref="<%= ma.referral_code || '' %>">
-                  <span class="font-medium"><%= ma.name %></span>
+                  data-id="<%= ma.id %>" data-username="<%= ma.username %>" data-ref="<%= ma.referral_code || '' %>">
+                  <span class="font-medium"><%= ma.username %></span>
                   <% if (ma.referral_code) { %>
                     <span class="text-xs text-gray-400 ml-2"><%= ma.referral_code %></span>
                   <% } %>
@@ -152,14 +239,15 @@
 
     <form id="editUserForm" method="POST" action="" class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-        <input type="text" name="name" id="editName" required
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+        <input type="text" name="username" id="editUsername" required
           class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-        <input type="email" name="email" id="editEmail" required
-          class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password <span class="text-xs text-gray-400">(leave blank to keep current)</span></label>
+        <input type="password" name="password" id="editPassword"
+          class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500"
+          placeholder="Enter new password">
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
@@ -180,8 +268,8 @@
           <div id="editMaDropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
             <% if (typeof masterAgents !== 'undefined') { masterAgents.forEach(ma => { %>
               <div class="edit-ma-option px-4 py-2.5 text-sm hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer transition-colors"
-                data-id="<%= ma.id %>" data-name="<%= ma.name %>" data-ref="<%= ma.referral_code || '' %>">
-                <span class="font-medium"><%= ma.name %></span>
+                data-id="<%= ma.id %>" data-username="<%= ma.username %>" data-ref="<%= ma.referral_code || '' %>">
+                <span class="font-medium"><%= ma.username %></span>
                 <% if (ma.referral_code) { %>
                   <span class="text-xs text-gray-400 ml-2"><%= ma.referral_code %></span>
                 <% } %>
@@ -201,6 +289,15 @@
 <% } %>
 
 <script>
+// --- Toggle subagents ---
+function toggleSubagents(maId) {
+  const rows = document.querySelectorAll('.sa-row[data-parent-ma="' + maId + '"]');
+  const chevron = document.querySelector('.ma-chevron[data-ma-id="' + maId + '"]');
+  const isHidden = rows[0]?.classList.contains('hidden');
+  rows.forEach(r => r.classList.toggle('hidden', !isHidden));
+  if (chevron) chevron.style.transform = isHidden ? 'rotate(90deg)' : '';
+}
+
 // --- Create Modal ---
 function handleRoleChange() {
   const role = document.getElementById('roleSelect')?.value;
@@ -238,17 +335,16 @@ document.addEventListener('DOMContentLoaded', handleRoleChange);
   function filterOptions() {
     const q = search.value.toLowerCase();
     options.forEach(opt => {
-      const name = opt.dataset.name.toLowerCase();
-      const ref = opt.dataset.ref.toLowerCase();
-      const match = name.includes(q) || ref.includes(q);
-      opt.style.display = match ? '' : 'none';
+      const name = (opt.dataset.username || '').toLowerCase();
+      const ref = (opt.dataset.ref || '').toLowerCase();
+      opt.style.display = (name.includes(q) || ref.includes(q)) ? '' : 'none';
     });
   }
 
   options.forEach(opt => {
     opt.addEventListener('click', function() {
       hidden.value = this.dataset.id;
-      search.value = this.dataset.name;
+      search.value = this.dataset.username;
       dropdown.classList.add('hidden');
     });
   });
@@ -273,22 +369,19 @@ function handleEditRoleChange() {
   }
 }
 
-function openEditModal(id, name, email, role, parentId) {
+function openEditModal(id, username, role, parentId) {
   document.getElementById('editUserForm').action = '/dashboard/users/edit/' + id;
-  document.getElementById('editName').value = name;
-  document.getElementById('editEmail').value = email;
+  document.getElementById('editUsername').value = username;
+  document.getElementById('editPassword').value = '';
 
   const roleSelect = document.getElementById('editRoleSelect');
-  if (roleSelect) {
-    roleSelect.value = role;
-  }
+  if (roleSelect) roleSelect.value = role;
 
-  // Set parent agent
   document.getElementById('editParentIdHidden').value = parentId;
   const editSearch = document.getElementById('editMaSearch');
   if (parentId && editSearch) {
     const opt = document.querySelector('.edit-ma-option[data-id="' + parentId + '"]');
-    editSearch.value = opt ? opt.dataset.name : '';
+    editSearch.value = opt ? opt.dataset.username : '';
   } else if (editSearch) {
     editSearch.value = '';
   }
@@ -320,17 +413,16 @@ function openEditModal(id, name, email, role, parentId) {
   function filterOptions() {
     const q = search.value.toLowerCase();
     options.forEach(opt => {
-      const name = opt.dataset.name.toLowerCase();
-      const ref = opt.dataset.ref.toLowerCase();
-      const match = name.includes(q) || ref.includes(q);
-      opt.style.display = match ? '' : 'none';
+      const name = (opt.dataset.username || '').toLowerCase();
+      const ref = (opt.dataset.ref || '').toLowerCase();
+      opt.style.display = (name.includes(q) || ref.includes(q)) ? '' : 'none';
     });
   }
 
   options.forEach(opt => {
     opt.addEventListener('click', function() {
       hidden.value = this.dataset.id;
-      search.value = this.dataset.name;
+      search.value = this.dataset.username;
       dropdown.classList.add('hidden');
     });
   });

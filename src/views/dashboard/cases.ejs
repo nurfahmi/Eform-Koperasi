@@ -1,3 +1,13 @@
+<%
+  const productMap = {};
+  if (typeof loanProducts !== 'undefined') {
+    loanProducts.forEach(p => {
+      productMap[p.key] = p.label;
+      if (p.children) p.children.forEach(c => { productMap[c.key] = p.label; });
+    });
+  }
+  function getProductName(key) { return key ? (productMap[key] || key) : '-'; }
+%>
 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
   <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
     <div class="flex items-center gap-2">
@@ -6,7 +16,7 @@
     </div>
     <div class="relative w-full sm:w-72">
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" id="caseSearch" placeholder="Cari nama, IC, atau majikan..."
+      <input type="text" id="caseSearch" placeholder="Cari nama, IC..."
         class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
     </div>
   </div>
@@ -14,41 +24,57 @@
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-gray-200 dark:border-gray-800">
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Customer</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Customer Name</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Customer IC</th>
+          <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Master Agent</th>
+          <% } else if (user.role === 'masteragent') { %>
           <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Agent</th>
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Referral</th>
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden md:table-cell">Date</th>
+          <% } %>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Product</th>
+          <% if (user.role === 'superadmin' || user.role === 'admin') { %>
           <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Action</th>
+          <% } else { %>
+          <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Status</th>
+          <% } %>
         </tr>
       </thead>
       <tbody id="caseTableBody">
+        <% const colCount = (user.role === 'superadmin' || user.role === 'admin' || user.role === 'masteragent') ? 5 : 4; %>
         <% if (submissions.length === 0) { %>
-          <tr><td colspan="5" class="px-3 sm:px-6 py-8 text-center text-gray-400">No pending cases</td></tr>
+          <tr><td colspan="<%= colCount %>" class="px-3 sm:px-6 py-8 text-center text-gray-400">No pending cases</td></tr>
         <% } %>
         <% submissions.forEach(s => { %>
           <tr class="case-row border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             data-name="<%= (s.applicant_name || '').toLowerCase() %>"
-            data-ic="<%= (s.applicant_ic || '').toLowerCase() %>"
-            data-employer="<%= (s.employer_name || '').toLowerCase() %>">
+            data-ic="<%= (s.applicant_ic || '').toLowerCase() %>">
             <td class="px-3 sm:px-6 py-3 font-medium">
               <div class="flex items-center gap-2">
                 <%= s.applicant_name %>
                 <% if (s.needs_image_review) { %>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" title="Gambar perlu disemak">📷 Semak Gambar</span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" title="Gambar perlu disemak">📷</span>
                 <% } %>
               </div>
               <div class="text-xs text-gray-400 sm:hidden"><%= s.applicant_ic !== '-' ? s.applicant_ic : '' %></div>
             </td>
-            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= s.agent_name %></td>
-            <td class="px-3 sm:px-6 py-3 font-mono text-xs hidden sm:table-cell"><%= s.referral_code || '-' %></td>
-            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell"><%= new Date(s.created_at).toLocaleString() %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell font-mono text-xs"><%= s.applicant_ic %></td>
+            <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= s.masteragent_name %></td>
+            <% } else if (user.role === 'masteragent') { %>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= s.subagent_name %></td>
+            <% } %>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell text-xs"><%= getProductName(s.product_key) %></td>
             <td class="px-3 sm:px-6 py-3 text-center">
               <% if (user.role === 'superadmin' || user.role === 'admin') { %>
                 <form method="POST" action="/dashboard/cases/<%= s.id %>/take" class="inline">
                   <button type="submit" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-medium transition-colors">Ambil Kes</button>
                 </form>
               <% } else { %>
-                <a href="/dashboard/cases/<%= s.id %>" class="text-primary-600 dark:text-primary-400 hover:underline text-xs font-medium">View</a>
+                <% if (s.taken_by) { %>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Diambil</span>
+                <% } else { %>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">Belum Diambil</span>
+                <% } %>
               <% } %>
             </td>
           </tr>
@@ -56,6 +82,7 @@
       </tbody>
     </table>
   </div>
+  <%- include('../partials/pagination', { tableId: 'caseTableBody', perPage: 10, rowClass: 'case-row' }) %>
   <div id="noResults" class="hidden px-4 sm:px-6 py-8 text-center text-gray-400 text-sm">Tiada hasil carian ditemui</div>
 </div>
 
@@ -71,8 +98,7 @@
       document.querySelectorAll('.case-row').forEach(row => {
         const name = row.dataset.name || '';
         const ic = row.dataset.ic || '';
-        const employer = row.dataset.employer || '';
-        const match = !q || name.includes(q) || ic.includes(q) || employer.includes(q);
+        const match = !q || name.includes(q) || ic.includes(q);
         row.style.display = match ? '' : 'none';
         if (match) visible++;
       });
@@ -90,6 +116,7 @@
 (function() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   let ws;
+  const colCount = <%= (user.role === 'superadmin' || user.role === 'admin') ? 4 : 3 %>;
 
   function connect() {
     ws = new WebSocket(proto + '//' + location.host + '/ws/notifications');
@@ -97,7 +124,7 @@
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'NEW_CASE') addCaseRow(data);
-        else if (data.type === 'CASE_TAKEN') removeCaseRow(data.caseId);
+        else if (data.type === 'CASE_TAKEN') markCaseTaken(data);
       } catch(e) {}
     };
     ws.onclose = function() { setTimeout(connect, 5000); };
@@ -117,9 +144,8 @@
     tr.style.animation = 'highlightRow 3s ease-out';
     tr.innerHTML = `
       <td class="px-3 sm:px-6 py-3 font-medium"><div>${data.applicantName}</div></td>
-      <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell">${data.agentName}</td>
-      <td class="px-3 sm:px-6 py-3 font-mono text-xs hidden sm:table-cell">-</td>
-      <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell">${data.date}</td>
+      <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell font-mono text-xs">-</td>
+      <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell">${data.agentName || '-'}</td>
       <td class="px-3 sm:px-6 py-3 text-center">
         <form method="POST" action="/dashboard/cases/${data.caseId}/take" class="inline">
           <button type="submit" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-medium transition-colors">Ambil Kes</button>
@@ -128,25 +154,27 @@
     tbody.appendChild(tr);
   }
 
-  function removeCaseRow(caseId) {
+  function markCaseTaken(data) {
     const tbody = document.getElementById('caseTableBody');
     if (!tbody) return;
-    let row = tbody.querySelector('tr[data-case-id="' + caseId + '"]');
+    // Remove the taken case row
+    let row = tbody.querySelector('tr[data-case-id="' + data.caseId + '"]');
     if (!row) {
-      const form = tbody.querySelector('form[action="/dashboard/cases/' + caseId + '/take"]');
+      const form = tbody.querySelector('form[action="/dashboard/cases/' + data.caseId + '/take"]');
       if (form) row = form.closest('tr');
     }
     if (row) {
-      row.style.transition = 'opacity 0.5s';
-      row.style.opacity = '0';
+      row.style.animation = 'highlightRow 0.5s ease-out';
+      setTimeout(() => row.remove(), 500);
+      // Show empty message if no rows left
       setTimeout(() => {
-        row.remove();
-        if (!tbody.querySelector('tr')) {
+        if (!tbody.querySelector('.case-row')) {
           const tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="5" class="px-3 sm:px-6 py-8 text-center text-gray-400">No pending cases</td>';
+          const colCount = <%= (user.role === 'superadmin' || user.role === 'admin') ? 4 : 3 %>;
+          tr.innerHTML = '<td colspan="' + colCount + '" class="px-3 sm:px-6 py-8 text-center text-gray-400">No pending cases</td>';
           tbody.appendChild(tr);
         }
-      }, 500);
+      }, 600);
     }
   }
 
@@ -154,3 +182,4 @@
 })();
 </script>
 <% } %>
+<%- include('../partials/pagination-script') %>

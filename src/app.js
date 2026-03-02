@@ -81,7 +81,7 @@ app.use('/dashboard/settings/templates', templateRoutes);
 app.use('/dashboard/settings', settingRoutes);
 app.use('/', submissionRoutes); // Public /submit route
 
-// 403 error page
+// 404 error page
 app.use((req, res) => {
   res.status(404).render('errors/404', {
     layout: 'layouts/main',

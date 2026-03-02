@@ -52,6 +52,23 @@
       <input type="hidden" name="draft_id" value="<%= draft.id %>">
     <% } %>
 
+    <!-- Product Selection -->
+    <% if (typeof loanProducts !== 'undefined' && loanProducts.length > 0) { %>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <div class="flex items-center gap-2 mb-3">
+        <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <h2 class="text-lg font-semibold">Produk Pinjaman</h2>
+      </div>
+      <select name="product_key" required
+        class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+        <option value="">-- Pilih Produk --</option>
+        <% loanProducts.forEach(p => { %>
+          <option value="<%= p.key %>"><%= p.label %></option>
+        <% }) %>
+      </select>
+    </div>
+    <% } %>
+
     <% if (typeof agents !== 'undefined' && agents.length > 0) { %>
     <!-- Agent Assignment (Admin/SuperAdmin only) -->
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
@@ -267,19 +284,23 @@
       <p class="text-xs text-gray-400 mb-4">Format: JPG, PNG, PDF | Max: 5MB per file</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC (Depan & Belakang)</label>
-          <input type="file" name="ic" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Depan</label>
+          <input type="file" name="ic_depan" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 1</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Belakang</label>
+          <input type="file" name="ic_belakang" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 1</label>
           <input type="file" name="payslip1" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 2</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 2</label>
           <input type="file" name="payslip2" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Bulan 3</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 3</label>
           <input type="file" name="payslip3" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
         </div>
         <div>
@@ -302,9 +323,10 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Settlement Letter</label>
           <input type="file" name="settlement_letter" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
         </div>
-        <div>
+        <div class="sm:col-span-2">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lain-lain (Other)</label>
-          <input type="file" name="other_doc" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+          <input type="file" name="other_doc" accept=".jpg,.jpeg,.png,.pdf" multiple class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
+          <p class="text-xs text-gray-400 mt-1">Boleh muat naik lebih dari satu fail</p>
         </div>
       </div>
     </div>
@@ -350,11 +372,10 @@
 
   function setVal(name, value) {
     const el = document.querySelector('[name="' + name + '"]');
-    if (!el || !value) return false;
-    value = value.trim();
+    if (!el) return false;
+    value = (value || '').trim();
     if (!value) return false;
     if (el.tagName === 'SELECT') {
-      // Try to match option by value (case-insensitive)
       const opts = el.options;
       for (let i = 0; i < opts.length; i++) {
         if (opts[i].value.toLowerCase() === value.toLowerCase()) {
@@ -362,7 +383,6 @@
           return true;
         }
       }
-      // Partial match
       for (let i = 0; i < opts.length; i++) {
         if (opts[i].value.toLowerCase().includes(value.toLowerCase()) || value.toLowerCase().includes(opts[i].value.toLowerCase())) {
           el.value = opts[i].value;
@@ -454,6 +474,24 @@
     return filled;
   }
 
+  // Fill N/A for fields that were not filled by WhatsApp
+  function fillNAForEmpty() {
+    const allFields = [
+      'applicant_name','applicant_ic','applicant_phone','applicant_email','applicant_address',
+      'applicant_tanggungan','applicant_pendidikan','applicant_jenis_kediaman','applicant_tempoh_menetap',
+      'applicant_nama_ibu','applicant_ic_ibu','applicant_hp_ibu','applicant_alamat_ibu',
+      'spouse_name','spouse_ic','spouse_jawatan','spouse_alamat_majikan','spouse_tel_pejabat','spouse_phone','spouse_gaji',
+      'job_employer','job_alamat_majikan','job_position','job_tarikh_mula','job_tel_pejabat',
+      'ref_name','ref_ic','ref_address','ref_phone','ref_relationship'
+    ];
+    allFields.forEach(function(name) {
+      const el = document.querySelector('[name="' + name + '"]');
+      if (el && !el.value.trim()) {
+        el.value = 'N/A';
+      }
+    });
+  }
+
   btnAutoFill.addEventListener('click', function() {
     const text = waInput.value.trim();
     if (!text) {
@@ -462,7 +500,8 @@
     }
     const filled = parseWhatsApp(text);
     if (filled > 0) {
-      showResult('✅ Berjaya mengisi ' + filled + ' field secara automatik. Sila semak dan lengkapkan field yang kosong.', false);
+      fillNAForEmpty();
+      showResult('✅ Berjaya mengisi ' + filled + ' field secara automatik. Field yang tiada maklumat diisi dengan N/A.', false);
     } else {
       showResult('⚠️ Tiada field yang dapat diisi. Pastikan format mesej WhatsApp betul.', true);
     }

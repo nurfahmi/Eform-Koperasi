@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const path = require('path');
 
 const DEFAULTS = {
   site_name: 'Credit Submission System',
@@ -11,7 +12,8 @@ const DEFAULTS = {
   iq_blur_threshold: '50',
   iq_bright_threshold: '245',
   iq_bright_percent: '40',
-  iq_block_upload: 'false'
+  iq_block_upload: 'false',
+  upload_dir: ''
 };
 
 const Setting = {
@@ -44,6 +46,14 @@ const Setting = {
       })
     );
     return Promise.all(ops);
+  },
+
+  async getUploadDir() {
+    const custom = await this.get('upload_dir');
+    if (custom && custom.trim()) {
+      return path.resolve(custom.trim());
+    }
+    return path.resolve(__dirname, '../../uploads');
   }
 };
 

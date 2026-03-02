@@ -4,13 +4,23 @@
 <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
   <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-3 rounded-xl mb-6"><%= error %></div>
 <% } %>
+<%
+  const productMap = {};
+  if (typeof loanProducts !== 'undefined') {
+    loanProducts.forEach(p => {
+      productMap[p.key] = p.label;
+      if (p.children) p.children.forEach(c => { productMap[c.key] = p.label; });
+    });
+  }
+  function getProductName(key) { return key ? (productMap[key] || key) : '-'; }
+%>
 
 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
   <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
     <h3 class="text-base font-semibold">Taken Cases</h3>
     <div class="relative w-full sm:w-72">
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" id="takenSearch" placeholder="Cari nama, IC, atau majikan..."
+      <input type="text" id="takenSearch" placeholder="Cari nama, IC..."
         class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:ring-2 focus:ring-primary-500">
     </div>
   </div>
@@ -18,40 +28,60 @@
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-gray-200 dark:border-gray-800">
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Customer</th>
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Taken By</th>
-          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Taken Date</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Customer Name</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Customer IC</th>
+          <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Master Agent</th>
+          <% } else if (user.role === 'masteragent') { %>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Agent</th>
+          <% } %>
+          <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Taken By</th>
+          <th class="text-left px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium hidden sm:table-cell">Product</th>
           <th class="text-center px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 font-medium">Action</th>
         </tr>
       </thead>
       <tbody id="takenTableBody">
+        <% const colCount = (user.role === 'superadmin' || user.role === 'admin' || user.role === 'masteragent') ? 6 : 5; %>
         <% if (submissions.length === 0) { %>
-          <tr><td colspan="4" class="px-3 sm:px-6 py-8 text-center text-gray-400">No taken cases</td></tr>
+          <tr><td colspan="<%= colCount %>" class="px-3 sm:px-6 py-8 text-center text-gray-400">No taken cases</td></tr>
         <% } %>
         <% submissions.forEach(s => { %>
           <tr class="taken-row border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             data-name="<%= (s.applicant_name || '').toLowerCase() %>"
-            data-ic="<%= (s.applicant_ic || '').toLowerCase() %>"
-            data-employer="<%= (s.employer_name || '').toLowerCase() %>">
+            data-ic="<%= (s.applicant_ic || '').toLowerCase() %>">
             <td class="px-3 sm:px-6 py-3 font-medium">
               <div class="flex items-center gap-2">
-                <%= s.applicant_name %>
+                <span><%= s.applicant_name %></span>
                 <% if (s.needs_image_review) { %>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" title="Gambar perlu disemak">📷 Semak Gambar</span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" title="Gambar perlu disemak">📷</span>
                 <% } %>
               </div>
               <div class="text-xs text-gray-400 sm:hidden"><%= s.applicant_ic !== '-' ? s.applicant_ic : '' %></div>
             </td>
-            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400"><%= s.taken_by_name || '-' %></td>
-            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell"><%= s.taken_at ? new Date(s.taken_at).toLocaleString() : '-' %></td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell font-mono text-xs"><%= s.applicant_ic %></td>
+            <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= s.masteragent_name %></td>
+            <% } else if (user.role === 'masteragent') { %>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell"><%= s.subagent_name %></td>
+            <% } %>
             <td class="px-3 sm:px-6 py-3 text-center">
-              <a href="/dashboard/cases/<%= s.id %>" class="text-primary-600 dark:text-primary-400 hover:underline text-xs font-medium">View</a>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"><%= s.taken_by_name || '-' %></span>
+            </td>
+            <td class="px-3 sm:px-6 py-3 text-gray-500 dark:text-gray-400 hidden sm:table-cell text-xs"><%= getProductName(s.product_key) %></td>
+            <td class="px-3 sm:px-6 py-3 text-center">
+              <% const canView = (user.role === 'superadmin') || (s.taken_by === user.id); %>
+              <% if (canView) { %>
+                <a href="/dashboard/cases/<%= s.id %>" class="px-3 py-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">View</a>
+              <% } else { %>
+                <span class="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">View</span>
+              <% } %>
             </td>
           </tr>
         <% }) %>
       </tbody>
     </table>
   </div>
+  <%- include('../partials/pagination', { tableId: 'takenTableBody', perPage: 10, rowClass: 'taken-row' }) %>
   <div id="noResults" class="hidden px-4 sm:px-6 py-8 text-center text-gray-400 text-sm">Tiada hasil carian ditemui</div>
 </div>
 
@@ -68,8 +98,7 @@
     rows.forEach(row => {
       const name = row.dataset.name || '';
       const ic = row.dataset.ic || '';
-      const employer = row.dataset.employer || '';
-      const match = !q || name.includes(q) || ic.includes(q) || employer.includes(q);
+      const match = !q || name.includes(q) || ic.includes(q);
       row.style.display = match ? '' : 'none';
       if (match) visible++;
     });
@@ -77,3 +106,4 @@
   });
 })();
 </script>
+<%- include('../partials/pagination-script') %>

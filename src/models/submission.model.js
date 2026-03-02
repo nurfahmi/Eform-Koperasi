@@ -2,12 +2,13 @@ const prisma = require('../config/db');
 const encryption = require('../services/encryption.service');
 
 const Submission = {
-  async create({ subagent_id, masteragent_id, referral_code, applicant_data, spouse_data, job_data, reference_data, status = 'pending', needs_image_review = false }) {
+  async create({ subagent_id, masteragent_id, referral_code, product_key, applicant_data, spouse_data, job_data, reference_data, status = 'pending', needs_image_review = false }) {
     const submission = await prisma.submission.create({
       data: {
         subagent_id: subagent_id || null,
         masteragent_id: masteragent_id || null,
         referral_code: referral_code || null,
+        product_key: product_key || null,
         status,
         needs_image_review: needs_image_review || false
       }
@@ -44,7 +45,7 @@ const Submission = {
   async findById(id) {
     const row = await prisma.submission.findUnique({
       where: { id },
-      include: { details: true, taker: { select: { name: true } } }
+      include: { details: true, taker: { select: { username: true } } }
     });
     if (!row) return null;
 
@@ -54,7 +55,7 @@ const Submission = {
     try { row.job_data = JSON.parse(encryption.decrypt(details.job_data)); } catch { row.job_data = {}; }
     try { row.reference_data = JSON.parse(encryption.decrypt(details.reference_data)); } catch { row.reference_data = {}; }
 
-    row.taken_by_name = row.taker?.name || null;
+    row.taken_by_name = row.taker?.username || null;
     return row;
   },
 
@@ -77,8 +78,10 @@ const Submission = {
         applicant_name,
         applicant_ic,
         employer_name,
-        agent_name: row.subagent?.name || row.masteragent?.name || '-',
-        taken_by_name: row.taker?.name || null
+        masteragent_name: row.masteragent?.username || '-',
+        subagent_name: row.subagent?.username || '-',
+        agent_name: row.subagent?.username || row.masteragent?.username || '-',
+        taken_by_name: row.taker?.username || null
       };
     });
   },
@@ -89,18 +92,28 @@ const Submission = {
       where: { status: 'pending', taken_by: null },
       orderBy: { created_at: 'asc' },
       include: {
-        subagent: { select: { name: true } },
-        masteragent: { select: { name: true } },
+        subagent: { select: { username: true } },
+        masteragent: { select: { username: true } },
         details: { select: { applicant_data: true, job_data: true } }
       }
     });
     return this._withNames(rows);
   },
 
-  // Agent case list: their own submitted (non-draft) cases
+  // Agent case list: pending untaken cases
   async findByAgent(userId, role) {
     if (role === 'superadmin' || role === 'admin') {
-      return this.findPendingUntaken();
+      // Only pending + not taken
+      const rows = await prisma.submission.findMany({
+        where: { status: 'pending', taken_by: null },
+        orderBy: { created_at: 'asc' },
+        include: {
+          subagent: { select: { username: true } },
+          masteragent: { select: { username: true } },
+          details: { select: { applicant_data: true, job_data: true } }
+        }
+      });
+      return this._withNames(rows);
     }
     const where = role === 'masteragent'
       ? { masteragent_id: userId, status: { not: 'draft' } }
@@ -109,8 +122,8 @@ const Submission = {
       where,
       orderBy: { created_at: 'asc' },
       include: {
-        subagent: { select: { name: true } },
-        masteragent: { select: { name: true } },
+        subagent: { select: { username: true } },
+        masteragent: { select: { username: true } },
         details: { select: { applicant_data: true, job_data: true } }
       }
     });
@@ -119,16 +132,16 @@ const Submission = {
 
   // Taken cases
   async findTaken(userId, role) {
-    const where = role === 'superadmin'
+    const where = (role === 'superadmin' || role === 'admin')
       ? { taken_by: { not: null } }
       : { taken_by: userId };
     const rows = await prisma.submission.findMany({
       where,
       orderBy: { taken_at: 'desc' },
       include: {
-        subagent: { select: { name: true } },
-        masteragent: { select: { name: true } },
-        taker: { select: { name: true } },
+        subagent: { select: { username: true } },
+        masteragent: { select: { username: true } },
+        taker: { select: { username: true } },
         details: { select: { applicant_data: true, job_data: true } }
       }
     });
@@ -136,9 +149,21 @@ const Submission = {
   },
 
   async takeCase(id, userId) {
+    // Atomic: only take if not already taken (prevents race condition)
+    const result = await prisma.submission.updateMany({
+      where: { id, taken_by: null },
+      data: { taken_by: userId, taken_at: new Date(), released_at: null, release_reason: null }
+    });
+    if (result.count === 0) {
+      throw new Error('Case already taken by someone else.');
+    }
+    return result;
+  },
+
+  async updateProduct(id, productKey) {
     return prisma.submission.update({
       where: { id },
-      data: { taken_by: userId, taken_at: new Date(), released_at: null, release_reason: null }
+      data: { product_key: productKey || null }
     });
   },
 
@@ -151,9 +176,14 @@ const Submission = {
 
   // Drafts
   async findDrafts(userId, role) {
-    const where = role === 'masteragent'
-      ? { masteragent_id: userId, status: 'draft' }
-      : { subagent_id: userId, status: 'draft' };
+    let where;
+    if (role === 'superadmin' || role === 'admin') {
+      where = { status: 'draft' };
+    } else if (role === 'masteragent') {
+      where = { masteragent_id: userId, status: 'draft' };
+    } else {
+      where = { subagent_id: userId, status: 'draft' };
+    }
     const rows = await prisma.submission.findMany({
       where,
       orderBy: { created_at: 'desc' },
@@ -233,9 +263,9 @@ const Submission = {
       orderBy: { created_at: 'desc' },
       take: limit,
       include: {
-        subagent: { select: { name: true } },
-        masteragent: { select: { name: true } },
-        taker: { select: { name: true } },
+        subagent: { select: { username: true } },
+        masteragent: { select: { username: true } },
+        taker: { select: { username: true } },
         details: { select: { applicant_data: true, job_data: true } }
       }
     });

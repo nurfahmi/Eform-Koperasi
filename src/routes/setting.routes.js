@@ -8,5 +8,6 @@ router.use(authMiddleware);
 
 router.get('/', roleMiddleware('superadmin'), SettingController.showSettings);
 router.post('/', roleMiddleware('superadmin'), SettingController.uploadFields, SettingController.updateSettings);
+router.get('/browse-dir', roleMiddleware('superadmin'), SettingController.browseDirectory);
 
 module.exports = router;

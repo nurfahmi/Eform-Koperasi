@@ -1,0 +1,94 @@
+<!-- Client-side pagination script -->
+<script>
+(function() {
+  document.querySelectorAll('.pagination-controls').forEach(function(ctrl) {
+    const tableId = ctrl.dataset.tableId;
+    const perPage = parseInt(ctrl.dataset.perPage) || 10;
+    const rowClass = ctrl.dataset.rowClass;
+    const prevBtn = ctrl.querySelector('.pg-prev');
+    const nextBtn = ctrl.querySelector('.pg-next');
+    const pgInfo = ctrl.querySelector('.pg-info');
+    const pgFrom = ctrl.querySelector('.pg-from');
+    const pgTo = ctrl.querySelector('.pg-to');
+    const pgTotal = ctrl.querySelector('.pg-total');
+    let currentPage = 1;
+
+    function getVisibleRows() {
+      const allRows = document.querySelectorAll('.' + rowClass);
+      return Array.from(allRows).filter(function(r) {
+        return r.style.display !== 'none' && !r.classList.contains('pagination-hidden');
+      });
+    }
+
+    function getAllDataRows() {
+      return Array.from(document.querySelectorAll('.' + rowClass));
+    }
+
+    function render() {
+      const allRows = getAllDataRows();
+      // Get rows not hidden by search
+      const searchVisible = allRows.filter(function(r) { return r.style.display !== 'none' || r.classList.contains('pagination-hidden'); });
+      // Actually: we need to track search vs pagination hiding separately
+      // Remove pagination hiding first to count search-visible
+      allRows.forEach(function(r) { r.classList.remove('pagination-hidden'); });
+      const visible = allRows.filter(function(r) { return r.style.display !== 'none'; });
+      const total = visible.length;
+      const totalPages = Math.max(1, Math.ceil(total / perPage));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * perPage;
+      const end = Math.min(start + perPage, total);
+
+      // Hide all, then show only current page
+      visible.forEach(function(r, i) {
+        if (i >= start && i < end) {
+          r.classList.remove('pagination-hidden');
+        } else {
+          r.classList.add('pagination-hidden');
+        }
+      });
+
+      // Apply CSS hiding
+      allRows.forEach(function(r) {
+        if (r.classList.contains('pagination-hidden')) {
+          r.setAttribute('data-pg-hidden', '1');
+        } else {
+          r.removeAttribute('data-pg-hidden');
+        }
+      });
+
+      pgFrom.textContent = total > 0 ? start + 1 : 0;
+      pgTo.textContent = end;
+      pgTotal.textContent = total;
+      pgInfo.textContent = 'Page ' + currentPage + ' / ' + totalPages;
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages;
+
+      // Hide controls if only 1 page
+      ctrl.style.display = total <= perPage ? 'none' : '';
+    }
+
+    prevBtn.addEventListener('click', function() { if (currentPage > 1) { currentPage--; render(); } });
+    nextBtn.addEventListener('click', function() { currentPage++; render(); });
+
+    // Re-render on search input (observe search changes)
+    const observer = new MutationObserver(function() { currentPage = 1; render(); });
+    const tbody = document.getElementById(tableId);
+    if (tbody) {
+      observer.observe(tbody, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    }
+
+    // Also listen to search inputs
+    document.querySelectorAll('input[type="text"], input[type="search"]').forEach(function(input) {
+      input.addEventListener('input', function() {
+        setTimeout(function() { currentPage = 1; render(); }, 10);
+      });
+    });
+
+    // Initial render
+    setTimeout(render, 0);
+  });
+})();
+</script>
+<style>
+  tr[data-pg-hidden="1"] { display: none !important; }
+</style>
