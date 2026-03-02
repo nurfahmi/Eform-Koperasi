@@ -93,9 +93,9 @@
         <div id="agentDropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
           <% agents.forEach(ag => { %>
             <div class="agent-option px-4 py-2.5 text-sm hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer transition-colors flex items-center justify-between"
-              data-id="<%= ag.id %>" data-name="<%= ag.name %>" data-ref="<%= ag.referral_code || '' %>" data-role="<%= ag.role %>">
+              data-id="<%= ag.id %>" data-name="<%= ag.username %>" data-ref="<%= ag.referral_code || '' %>" data-role="<%= ag.role %>">
               <div>
-                <span class="font-medium"><%= ag.name %></span>
+                <span class="font-medium"><%= ag.username %></span>
                 <% if (ag.referral_code) { %>
                   <span class="text-xs text-gray-400 ml-2"><%= ag.referral_code %></span>
                 <% } %>
