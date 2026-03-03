@@ -4,7 +4,7 @@ const TemplateController = require('../controllers/template.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
-const adminOnly = [authMiddleware, roleMiddleware('superadmin', 'admin')];
+const adminOnly = [authMiddleware, roleMiddleware('superadmin')];
 
 router.get('/', ...adminOnly, TemplateController.listTemplates);
 router.post('/upload', ...adminOnly, TemplateController.uploadMiddleware, TemplateController.uploadTemplate);
