@@ -259,7 +259,8 @@ const SubmissionController = {
         job_data,
         reference_data,
         status,
-        needs_image_review: needsImageReview
+        needs_image_review: needsImageReview,
+        agent_message: req.body.agent_message || null
       });
 
       // Move files from temp to {uploadDir}/submissions/{YYYY-MM}/{IC}/
@@ -655,10 +656,6 @@ const SubmissionController = {
   async uploadSubmissionFile(req, res) {
     try {
       const currentUser = req.session.user;
-      if (currentUser.role !== 'superadmin' && currentUser.role !== 'admin') {
-        req.flash('error', 'Unauthorized.');
-        return res.redirect('/dashboard/cases');
-      }
 
       const submission = await Submission.findById(req.params.id);
       if (!submission) {

@@ -43,6 +43,7 @@ model Submission {
   released_at     DateTime?
   release_reason      String?          @db.Text
   needs_image_review  Boolean          @default(false)
+  agent_message       String?          @db.Text
   created_at          DateTime         @default(now())
 
   subagent    User? @relation("SubagentSubmissions", fields: [subagent_id], references: [id], onDelete: SetNull)

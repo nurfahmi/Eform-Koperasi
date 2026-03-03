@@ -2,7 +2,7 @@ const prisma = require('../config/db');
 const encryption = require('../services/encryption.service');
 
 const Submission = {
-  async create({ subagent_id, masteragent_id, referral_code, product_key, applicant_data, spouse_data, job_data, reference_data, status = 'pending', needs_image_review = false }) {
+  async create({ subagent_id, masteragent_id, referral_code, product_key, applicant_data, spouse_data, job_data, reference_data, status = 'pending', needs_image_review = false, agent_message = null }) {
     const submission = await prisma.submission.create({
       data: {
         subagent_id: subagent_id || null,
@@ -10,7 +10,8 @@ const Submission = {
         referral_code: referral_code || null,
         product_key: product_key || null,
         status,
-        needs_image_review: needs_image_review || false
+        needs_image_review: needs_image_review || false,
+        agent_message: agent_message || null
       }
     });
 
