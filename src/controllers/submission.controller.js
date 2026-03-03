@@ -23,7 +23,7 @@ const FILE_FIELDS = [
   { name: 'payslip3', maxCount: 1 },
   { name: 'bank_page', maxCount: 1 },
   { name: 'signature', maxCount: 1 },
-  { name: 'chop_sign', maxCount: 1 },
+  { name: 'chop_sign', maxCount: 5 },
   { name: 'bill_rumah', maxCount: 1 },
   { name: 'settlement_letter', maxCount: 1 },
   { name: 'other_doc', maxCount: 10 }
@@ -343,9 +343,9 @@ const SubmissionController = {
       const files = await FileModel.findBySubmission(submission.id);
       const loanProducts = PdfService.getLoanProducts();
 
-      // Load admin files (superadmin only)
+      // Load admin files (admin+)
       let adminFiles = [];
-      if (currentUser.role === 'superadmin') {
+      if (currentUser.role === 'superadmin' || currentUser.role === 'admin') {
         adminFiles = await prisma.adminCaseFile.findMany({
           where: { submission_id: submission.id },
           orderBy: { uploaded_at: 'desc' }
@@ -650,6 +650,60 @@ const SubmissionController = {
       if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
       res.json({ ok: true, issues: [] });
     }
+  },
+
+  async uploadSubmissionFile(req, res) {
+    try {
+      const currentUser = req.session.user;
+      if (currentUser.role !== 'superadmin' && currentUser.role !== 'admin') {
+        req.flash('error', 'Unauthorized.');
+        return res.redirect('/dashboard/cases');
+      }
+
+      const submission = await Submission.findById(req.params.id);
+      if (!submission) {
+        req.flash('error', 'Submission not found.');
+        return res.redirect('/dashboard/cases');
+      }
+
+      const file_type = req.body.file_type;
+      if (!file_type || !req.file) {
+        req.flash('error', 'File type and file are required.');
+        return res.redirect(`/dashboard/cases/${req.params.id}`);
+      }
+
+      // Find the directory from existing files, or create from IC
+      const uploadDir = await Setting.getUploadDir();
+      const existingFiles = await FileModel.findBySubmission(submission.id);
+      let relDir;
+      if (existingFiles.length > 0) {
+        relDir = path.dirname(existingFiles[0].file_path);
+      } else {
+        const ic = submission.applicant_data?.ic || submission.id;
+        const ym = getYearMonth();
+        relDir = path.join('submissions', ym, ic.replace(/[-\s]/g, ''));
+      }
+
+      const destDir = path.join(uploadDir, relDir);
+      if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+      const newPath = path.join(destDir, req.file.filename);
+      fs.renameSync(req.file.path, newPath);
+
+      await FileModel.create({
+        submission_id: submission.id,
+        file_type: file_type,
+        file_path: path.join(relDir, req.file.filename)
+      });
+
+      req.flash('success', 'File uploaded.');
+      res.redirect(`/dashboard/cases/${req.params.id}`);
+    } catch (err) {
+      console.error('Upload submission file error:', err);
+      if (req.file) try { fs.unlinkSync(req.file.path); } catch {}
+      req.flash('error', 'Failed to upload file.');
+      res.redirect(`/dashboard/cases/${req.params.id}`);
+    }
   }
 };
 
@@ -657,7 +711,7 @@ const SubmissionController = {
 const SubmissionController_adminFiles = {
   async uploadAdminFile(req, res) {
     try {
-      if (req.session.user.role !== 'superadmin') {
+      if (req.session.user.role !== 'superadmin' && req.session.user.role !== 'admin') {
         req.flash('error', 'Unauthorized.');
         return res.redirect('/dashboard/cases');
       }
@@ -700,7 +754,7 @@ const SubmissionController_adminFiles = {
 
   async deleteAdminFile(req, res) {
     try {
-      if (req.session.user.role !== 'superadmin') {
+      if (req.session.user.role !== 'superadmin' && req.session.user.role !== 'admin') {
         req.flash('error', 'Unauthorized.');
         return res.redirect('/dashboard/cases');
       }
@@ -726,7 +780,7 @@ const SubmissionController_adminFiles = {
 
   async downloadAdminFile(req, res) {
     try {
-      if (req.session.user.role !== 'superadmin') {
+      if (req.session.user.role !== 'superadmin' && req.session.user.role !== 'admin') {
         req.flash('error', 'Unauthorized.');
         return res.redirect('/dashboard/cases');
       }
@@ -783,7 +837,7 @@ const SubmissionController_adminFiles = {
 
   async downloadAllAdminFiles(req, res) {
     try {
-      if (req.session.user.role !== 'superadmin') {
+      if (req.session.user.role !== 'superadmin' && req.session.user.role !== 'admin') {
         req.flash('error', 'Unauthorized.');
         return res.redirect('/dashboard/cases');
       }

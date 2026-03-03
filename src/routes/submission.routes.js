@@ -23,8 +23,9 @@ router.get('/drafts/:id/edit', authMiddleware, SubmissionController.editDraft);
 router.post('/drafts/:id/delete', authMiddleware, SubmissionController.deleteDraft);
 router.get('/files/:fileId/download', authMiddleware, SubmissionController.downloadFile);
 router.get('/cases/:id/pdf/:template', authMiddleware, SubmissionController.generatePdf);
+router.post('/cases/:id/upload-file', authMiddleware, upload.single('file'), SubmissionController.uploadSubmissionFile);
 
-// Admin case file routes (superadmin only)
+// Admin case file routes
 router.post('/cases/:id/admin-files', authMiddleware, upload.single('file'), SubmissionController.uploadAdminFile);
 router.get('/admin-files/:fileId/download', authMiddleware, SubmissionController.downloadAdminFile);
 router.post('/cases/:id/admin-files/:fileId/delete', authMiddleware, SubmissionController.deleteAdminFile);
