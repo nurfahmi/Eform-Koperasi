@@ -52,14 +52,15 @@ const SettingController = {
   async updateSettings(req, res) {
     try {
       const { site_name, site_short, primary_color, accent_color,
-        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload, upload_dir } = req.body;
+        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload, upload_dir, force_uppercase } = req.body;
       const updates = { site_name, site_short, primary_color, accent_color,
         iq_enabled: iq_enabled || 'false',
         iq_blur_threshold: iq_blur_threshold || '50',
         iq_bright_threshold: iq_bright_threshold || '245',
         iq_bright_percent: iq_bright_percent || '40',
         iq_block_upload: iq_block_upload || 'false',
-        upload_dir: upload_dir || ''
+        upload_dir: upload_dir || '',
+        force_uppercase: force_uppercase || 'false'
       };
 
       // Handle logo upload

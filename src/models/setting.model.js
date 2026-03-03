@@ -13,7 +13,8 @@ const DEFAULTS = {
   iq_bright_threshold: '245',
   iq_bright_percent: '40',
   iq_block_upload: 'false',
-  upload_dir: ''
+  upload_dir: '',
+  force_uppercase: 'false'
 };
 
 const Setting = {

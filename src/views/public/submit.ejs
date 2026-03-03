@@ -314,5 +314,24 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
+<% if (typeof siteSettings !== 'undefined' && siteSettings.force_uppercase === 'true') { %>
+<style>
+  input[type="text"], input[type="email"], input[type="tel"], textarea {
+    text-transform: uppercase;
+  }
+  input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="tel"]::placeholder, textarea::placeholder {
+    text-transform: none;
+  }
+</style>
+<script>
+document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], textarea').forEach(function(el) {
+  el.addEventListener('input', function() {
+    var s = this.selectionStart, e = this.selectionEnd;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(s, e);
+  });
+});
+</script>
+<% } %>
 </body>
 </html>
