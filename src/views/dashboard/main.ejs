@@ -290,11 +290,15 @@ function fallbackCopy(text, cb) {
   </div>
 </div>
 
-
-
+<!-- Toast container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2" style="pointer-events:none;"></div>
 
 <style>
   @keyframes highlightRow { from { background: rgba(14,165,233,0.15); } to { background: transparent; } }
+  @keyframes toastIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+  @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
+  .toast-item { pointer-events:auto; animation: toastIn 0.3s ease-out; }
+  .toast-item.removing { animation: toastOut 0.3s ease-in forwards; }
 </style>
 <script>
 (function() {
@@ -314,6 +318,7 @@ function fallbackCopy(text, cb) {
           updateBadge(-1);
         } else if (data.type === 'CASE_MODIFIED') {
           addModifiedRow(data);
+          showToast(data);
         }
       } catch(e) {}
     };
@@ -386,6 +391,27 @@ function fallbackCopy(text, cb) {
         h3.appendChild(span);
       }
     }
+  }
+
+  function showToast(data) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast-item flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/90 max-w-sm cursor-pointer';
+    toast.innerHTML = `
+      <span class="text-lg">📝</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-orange-800 dark:text-orange-200 truncate">${data.applicantName}</p>
+        <p class="text-[11px] text-orange-600 dark:text-orange-400">Dokumen dikemaskini</p>
+      </div>
+      <span class="text-xs text-orange-500 dark:text-orange-300 font-medium shrink-0">View →</span>`;
+    toast.onclick = () => { window.location.href = '/dashboard/cases/' + data.caseId; };
+    container.appendChild(toast);
+    // Auto remove after 5s
+    setTimeout(() => {
+      toast.classList.add('removing');
+      setTimeout(() => toast.remove(), 300);
+    }, 5000);
   }
 
   function addModifiedRow(data) {
