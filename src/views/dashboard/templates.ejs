@@ -91,7 +91,7 @@
 
           <% } else { %>
             <!-- Multi-file product -->
-            <div class="px-6 py-4">
+            <div class="px-6 py-4" data-product-key="<%= t.key %>">
               <div class="flex items-center justify-between cursor-pointer<%= t.enabled === false ? ' opacity-50' : '' %>" onclick="toggleChildren('<%= t.key %>')" data-product-key="<%= t.key %>">
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 child-chevron" data-key="<%= t.key %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -238,29 +238,20 @@ async function reorderProduct(key, direction) {
   if (!res.ok) return;
   const list = document.querySelector('.divide-y');
   if (!list) return;
-  // Find the product row (direct child of divide-y)
-  const rows = Array.from(list.children);
-  const currentIdx = rows.findIndex(row => {
-    const el = row.querySelector('[data-product-key="' + key + '"]') || (row.dataset && row.dataset.productKey === key);
-    return el || row.querySelector('[data-product-key="' + key + '"]');
-  });
+  const rows = Array.from(list.children).filter(el => el.dataset.productKey);
+  const currentIdx = rows.findIndex(r => r.dataset.productKey === key);
   if (currentIdx === -1) return;
   const current = rows[currentIdx];
   const swapIdx = direction === 'up' ? currentIdx - 1 : currentIdx + 1;
   if (swapIdx < 0 || swapIdx >= rows.length) return;
   const sibling = rows[swapIdx];
-  // Animate
-  const h = current.offsetHeight;
-  const sh = sibling.offsetHeight;
+  const cRect = current.getBoundingClientRect();
+  const sRect = sibling.getBoundingClientRect();
+  const dy = sRect.top - cRect.top;
   current.style.transition = 'transform 0.3s ease';
   sibling.style.transition = 'transform 0.3s ease';
-  if (direction === 'up') {
-    current.style.transform = `translateY(-${sh}px)`;
-    sibling.style.transform = `translateY(${h}px)`;
-  } else {
-    current.style.transform = `translateY(${sh}px)`;
-    sibling.style.transform = `translateY(-${h}px)`;
-  }
+  current.style.transform = `translateY(${dy}px)`;
+  sibling.style.transform = `translateY(${-dy}px)`;
   setTimeout(() => {
     current.style.transition = '';
     current.style.transform = '';
