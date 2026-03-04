@@ -238,10 +238,10 @@ const TemplateController = {
   async reorderProduct(req, res) {
     try {
       PdfService.reorderProduct(req.params.key, req.params.direction);
+      res.json({ ok: true });
     } catch (err) {
-      req.flash('error', 'Failed to reorder: ' + err.message);
+      res.status(400).json({ ok: false, error: err.message });
     }
-    res.redirect('/dashboard/settings/templates');
   },
 
   // POST /:key/delete

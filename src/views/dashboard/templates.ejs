@@ -56,7 +56,7 @@
         <% templates.forEach(t => { %>
           <% if (!t.children || t.children.length === 0 && t.file) { %>
             <!-- Single-file product -->
-            <div class="px-6 py-4 flex items-center justify-between<%= t.enabled === false ? ' opacity-50' : '' %>">
+            <div class="px-6 py-4 flex items-center justify-between<%= t.enabled === false ? ' opacity-50' : '' %>" data-product-key="<%= t.key %>">
               <div>
                 <p class="text-sm font-semibold"><%= t.label %></p>
                 <p class="text-xs text-gray-400 mt-0.5">
@@ -68,8 +68,8 @@
               </div>
               <div class="flex items-center gap-2">
                 <div class="flex flex-col gap-0.5 mr-1">
-                  <form action="/dashboard/settings/templates/<%= t.key %>/reorder/up" method="POST" class="inline"><button type="submit" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move up"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button></form>
-                  <form action="/dashboard/settings/templates/<%= t.key %>/reorder/down" method="POST" class="inline"><button type="submit" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move down"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button></form>
+                  <button type="button" onclick="reorderProduct('<%= t.key %>', 'up')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move up"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button>
+                  <button type="button" onclick="reorderProduct('<%= t.key %>', 'down')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move down"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>
                 </div>
                 <form action="/dashboard/settings/templates/<%= t.key %>/toggle" method="POST" class="inline">
                   <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
@@ -92,7 +92,7 @@
           <% } else { %>
             <!-- Multi-file product -->
             <div class="px-6 py-4">
-              <div class="flex items-center justify-between cursor-pointer<%= t.enabled === false ? ' opacity-50' : '' %>" onclick="toggleChildren('<%= t.key %>')">
+              <div class="flex items-center justify-between cursor-pointer<%= t.enabled === false ? ' opacity-50' : '' %>" onclick="toggleChildren('<%= t.key %>')" data-product-key="<%= t.key %>">
                 <div class="flex items-center gap-2">
                   <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 child-chevron" data-key="<%= t.key %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                   <div>
@@ -107,8 +107,8 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <div class="flex flex-col gap-0.5 mr-1">
-                    <form action="/dashboard/settings/templates/<%= t.key %>/reorder/up" method="POST" class="inline" onclick="event.stopPropagation()"><button type="submit" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move up"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button></form>
-                    <form action="/dashboard/settings/templates/<%= t.key %>/reorder/down" method="POST" class="inline" onclick="event.stopPropagation()"><button type="submit" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move down"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button></form>
+                    <button type="button" onclick="event.stopPropagation(); reorderProduct('<%= t.key %>', 'up')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move up"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button>
+                    <button type="button" onclick="event.stopPropagation(); reorderProduct('<%= t.key %>', 'down')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move down"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>
                   </div>
                   <form action="/dashboard/settings/templates/<%= t.key %>/toggle" method="POST" class="inline" onclick="event.stopPropagation()">
                     <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
@@ -233,4 +233,44 @@ document.addEventListener('keydown', function(e) {
     document.getElementById('addChildModal')?.classList.add('hidden');
   }
 });
+async function reorderProduct(key, direction) {
+  const res = await fetch(`/dashboard/settings/templates/${key}/reorder/${direction}`, { method: 'POST' });
+  if (!res.ok) return;
+  const list = document.querySelector('.divide-y');
+  if (!list) return;
+  // Find the product row (direct child of divide-y)
+  const rows = Array.from(list.children);
+  const currentIdx = rows.findIndex(row => {
+    const el = row.querySelector('[data-product-key="' + key + '"]') || (row.dataset && row.dataset.productKey === key);
+    return el || row.querySelector('[data-product-key="' + key + '"]');
+  });
+  if (currentIdx === -1) return;
+  const current = rows[currentIdx];
+  const swapIdx = direction === 'up' ? currentIdx - 1 : currentIdx + 1;
+  if (swapIdx < 0 || swapIdx >= rows.length) return;
+  const sibling = rows[swapIdx];
+  // Animate
+  const h = current.offsetHeight;
+  const sh = sibling.offsetHeight;
+  current.style.transition = 'transform 0.3s ease';
+  sibling.style.transition = 'transform 0.3s ease';
+  if (direction === 'up') {
+    current.style.transform = `translateY(-${sh}px)`;
+    sibling.style.transform = `translateY(${h}px)`;
+  } else {
+    current.style.transform = `translateY(${sh}px)`;
+    sibling.style.transform = `translateY(-${h}px)`;
+  }
+  setTimeout(() => {
+    current.style.transition = '';
+    current.style.transform = '';
+    sibling.style.transition = '';
+    sibling.style.transform = '';
+    if (direction === 'up') {
+      list.insertBefore(current, sibling);
+    } else {
+      list.insertBefore(sibling, current);
+    }
+  }, 300);
+}
 </script>
