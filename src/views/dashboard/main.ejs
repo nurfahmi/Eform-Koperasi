@@ -215,7 +215,22 @@ function fallbackCopy(text, cb) {
     <%- include('../partials/pagination', { tableId: 'recentCasesBody', perPage: 5, rowClass: 'recent-row' }) %>
   </div>
 
-  <!-- Agent Performance (1/3 width) - moved to right column -->
+  <% if (user.role === 'superadmin' || user.role === 'admin') { %>
+  <!-- Activity Feed (1/3 width) -->
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+    <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="text-base font-semibold">🔔 Aktiviti</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] text-gray-400">🟢 Live</span>
+        <a href="/dashboard/notifications" class="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium">All →</a>
+      </div>
+    </div>
+    <div id="activityFeed" class="divide-y divide-gray-100 dark:divide-gray-800 overflow-y-auto" style="max-height: 400px;">
+      <div class="px-4 py-6 text-center text-gray-400 text-xs" id="activityEmpty">Tiada aktiviti terkini</div>
+    </div>
+  </div>
+  <% } else { %>
+  <!-- Agent Performance (1/3 width) - for non-admin -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
     <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
       <h3 class="text-base font-semibold"><%= (user.role === 'masteragent') ? 'Sub Agent Performance' : 'Master Agent Performance' %></h3>
@@ -242,23 +257,35 @@ function fallbackCopy(text, cb) {
       <% }) %>
     </div>
   </div>
+  <% } %>
 </div>
 
 <% if (user.role === 'superadmin' || user.role === 'admin') { %>
-<!-- Activity Feed -->
+<!-- Agent Performance (full width below) -->
 <div class="mt-6 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
-  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-    <h3 class="text-base font-semibold">
-      🔔 Aktiviti Terkini
-      <span id="activityBadge" class="ml-2 hidden inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">0</span>
-    </h3>
-    <div class="flex items-center gap-2">
-      <span class="text-[10px] text-gray-400">🟢 Real-time</span>
-      <a href="/dashboard/notifications" class="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium">View All →</a>
-    </div>
+  <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-base font-semibold"><%= (user.role === 'masteragent') ? 'Sub Agent Performance' : 'Master Agent Performance' %></h3>
   </div>
-  <div id="activityFeed" class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
-    <div class="px-4 py-6 text-center text-gray-400 text-xs" id="activityEmpty">Tiada aktiviti terkini</div>
+  <div class="overflow-y-auto" style="max-height: 400px;">
+    <% if (performance.length === 0) { %>
+      <div class="px-4 sm:px-6 py-8 text-center text-gray-400 text-sm">No agents found</div>
+    <% } %>
+    <% performance.sort((a, b) => b.total - a.total).forEach((p, i) => { %>
+      <div class="flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+          <% if (i === 0) { %>bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300
+          <% } else if (i === 1) { %>bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300
+          <% } else if (i === 2) { %>bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300
+          <% } else { %>bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400<% } %>"><%= i + 1 %></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate"><%= p.name %></p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-bold"><%= p.total %></p>
+          <p class="text-xs text-gray-400">kes</p>
+        </div>
+      </div>
+    <% }) %>
   </div>
 </div>
 
