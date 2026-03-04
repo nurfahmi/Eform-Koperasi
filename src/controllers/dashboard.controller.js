@@ -95,6 +95,15 @@ const DashboardController = {
     } catch (err) {
       res.json([]);
     }
+  },
+
+  notifications(req, res) {
+    res.render('dashboard/notifications', {
+      layout: 'layouts/main',
+      title: 'Notifications',
+      user: req.session.user,
+      page: 'notifications'
+    });
   }
 };
 module.exports = DashboardController;

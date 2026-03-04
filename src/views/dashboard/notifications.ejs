@@ -1,0 +1,42 @@
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-bold">🔔 All Notifications</h1>
+    <button onclick="clearAllNotifs(); renderPageNotifs();" class="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium">Mark all read</button>
+  </div>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div id="pageNotifList" class="divide-y divide-gray-100 dark:divide-gray-800">
+      <div class="px-6 py-12 text-center text-gray-400 text-sm">No notifications</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function renderPageNotifs() {
+  const list = getNotifs();
+  const container = document.getElementById('pageNotifList');
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = '<div class="px-6 py-12 text-center text-gray-400 text-sm">No notifications</div>';
+    return;
+  }
+  container.innerHTML = list.map(n => {
+    const icon = n.type === 'CASE_MODIFIED' ? '📝' : n.type === 'NEW_CASE' ? '🆕' : '✅';
+    const bg = n.read ? '' : 'bg-blue-50/50 dark:bg-blue-900/10';
+    const ago = timeAgo(n.timestamp);
+    const date = new Date(n.timestamp).toLocaleString('ms-MY');
+    return `<a href="/dashboard/cases/${n.caseId}" onclick="markRead('${n.id}')" class="flex items-center gap-4 px-4 sm:px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${bg}">
+      <span class="text-xl shrink-0">${icon}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold truncate ${n.read ? 'text-gray-500 dark:text-gray-400' : ''}">${n.applicantName}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">${n.message}</p>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="text-[11px] text-gray-400">${ago}</p>
+        <p class="text-[10px] text-gray-300 dark:text-gray-600">${date}</p>
+      </div>
+      ${!n.read ? '<span class="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>' : ''}
+    </a>`;
+  }).join('');
+}
+renderPageNotifs();
+</script>

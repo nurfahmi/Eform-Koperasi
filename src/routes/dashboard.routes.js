@@ -9,5 +9,6 @@ router.get('/', DashboardController.main);
 router.get('/main', DashboardController.main);
 router.get('/api/new-cases-count', DashboardController.newCasesCount);
 router.get('/api/recently-modified', DashboardController.recentlyModifiedApi);
+router.get('/notifications', DashboardController.notifications);
 
 module.exports = router;

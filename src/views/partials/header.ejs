@@ -97,7 +97,8 @@ function renderNotifs() {
     container.innerHTML = '<div class="px-4 py-6 text-center text-gray-400 text-xs">No notifications</div>';
     return;
   }
-  container.innerHTML = list.map(n => {
+  const shown = list.slice(0, 5);
+  let html = shown.map(n => {
     const icon = n.type === 'CASE_MODIFIED' ? '📝' : n.type === 'NEW_CASE' ? '🆕' : '✅';
     const bg = n.read ? '' : 'bg-blue-50/50 dark:bg-blue-900/10';
     const ago = timeAgo(n.timestamp);
@@ -113,6 +114,10 @@ function renderNotifs() {
       </div>
     </a>`;
   }).join('');
+  if (list.length > 5) {
+    html += `<a href="/dashboard/notifications" class="block px-4 py-3 text-center text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800">View All (${list.length}) →</a>`;
+  }
+  container.innerHTML = html;
 }
 
 function markRead(id) {
