@@ -343,6 +343,13 @@ const SubmissionController = {
         orderBy: { uploaded_at: 'desc' }
       });
 
+      // Build product name from loanProducts
+      const productMap = {};
+      loanProducts.forEach(p => {
+        productMap[p.key] = p.label;
+        if (p.children) p.children.forEach(c => { productMap[c.key] = p.label; });
+      });
+
       res.render('dashboard/case-detail', {
         layout: 'layouts/main',
         title: 'Case Detail',
@@ -351,6 +358,11 @@ const SubmissionController = {
         files,
         adminFiles,
         loanProducts,
+        caseInfoBadges: {
+          product: submission.product_key ? (productMap[submission.product_key] || submission.product_key) : null,
+          masteragent: submission.masteragent_name !== '-' ? submission.masteragent_name : null,
+          subagent: submission.subagent_name !== '-' ? submission.subagent_name : null
+        },
         page: 'cases'
       });
     } catch (err) {

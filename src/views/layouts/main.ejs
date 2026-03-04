@@ -133,6 +133,10 @@
             addNotified(data.caseId);
             playNotifSound();
             showToast(data.applicantName);
+            if (window._addNotif) window._addNotif(data);
+          }
+          if (data.type === 'CASE_MODIFIED') {
+            if (window._addNotif) window._addNotif(data);
           }
         } catch(e) {}
       };
