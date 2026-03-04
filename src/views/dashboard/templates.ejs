@@ -44,33 +44,15 @@
     </form>
   </div>
 
-  <!-- Reorder Products -->
-  <% if (templates.length > 1) { %>
-  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between cursor-pointer" onclick="document.getElementById('reorderSection').classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
-      <h3 class="text-base font-semibold">↕️ Reorder Products</h3>
-      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-    </div>
-    <div id="reorderSection" class="hidden p-4">
-      <p class="text-xs text-gray-400 mb-3">Drag and drop to reorder. Changes save automatically.</p>
-      <div id="sortableList" class="space-y-2">
-        <% templates.forEach((t, i) => { %>
-        <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md" data-key="<%= t.key %>">
-          <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
-          <span class="text-sm font-medium flex-1"><%= t.label %></span>
-          <span class="text-[11px] px-2 py-0.5 rounded-full <%= t.enabled === false ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'bg-green-100 dark:bg-green-900/30 text-green-500' %>"><%= t.enabled === false ? 'Disabled' : 'Active' %></span>
-        </div>
-        <% }); %>
-      </div>
-      <div id="reorderStatus" class="hidden mt-3 text-xs font-medium text-green-600 dark:text-green-400">✓ Order saved</div>
-    </div>
-  </div>
-  <% } %>
-
   <!-- Products List -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
       <h3 class="text-base font-semibold">Products (<%= templates.length %>)</h3>
+      <% if (templates.length > 1) { %>
+      <a href="/dashboard/settings/templates/reorder" class="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+        ↕️ Reorder
+      </a>
+      <% } %>
     </div>
     <% if (templates.length === 0) { %>
       <div class="px-6 py-12 text-center text-gray-400 text-sm">No products yet.</div>
@@ -248,34 +230,4 @@ document.addEventListener('keydown', function(e) {
     document.getElementById('addChildModal')?.classList.add('hidden');
   }
 });
-async function reorderProduct(key, direction) {
-  await fetch(`/dashboard/settings/templates/${key}/reorder/${direction}`, { method: 'POST' });
-  location.reload();
-}
 </script>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-<script>
-const sortEl = document.getElementById('sortableList');
-if (sortEl) {
-  new Sortable(sortEl, {
-    animation: 250,
-    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-    ghostClass: 'opacity-30',
-    chosenClass: 'shadow-lg',
-    dragClass: 'shadow-2xl',
-    onEnd: async function() {
-      const keys = Array.from(sortEl.children).map(el => el.dataset.key);
-      const status = document.getElementById('reorderStatus');
-      const res = await fetch('/dashboard/settings/templates/save-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys })
-      });
-      if (res.ok) {
-        location.reload();
-      }
-    }
-  });
-}
-</script>
-

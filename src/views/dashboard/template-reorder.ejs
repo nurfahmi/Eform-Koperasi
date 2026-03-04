@@ -1,0 +1,71 @@
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-bold">↕️ Reorder Products</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Drag and drop to change the order. This affects the product dropdown in the submission form.</p>
+    </div>
+    <a href="/dashboard/settings/templates" class="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+      ← Back
+    </a>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400"><%= templates.length %> products</h3>
+      <div id="saveStatus" class="text-xs font-medium text-green-600 dark:text-green-400 opacity-0 transition-opacity duration-300">✓ Saved</div>
+    </div>
+
+    <div id="sortableList" class="p-3 space-y-2">
+      <% templates.forEach((t, i) => { %>
+      <div class="group flex items-center gap-4 px-5 py-4 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md hover:bg-gray-100 dark:hover:bg-gray-700/80 border border-transparent hover:border-gray-200 dark:hover:border-gray-700" data-key="<%= t.key %>">
+        <div class="flex flex-col items-center text-gray-300 dark:text-gray-600 group-hover:text-gray-400 dark:group-hover:text-gray-500 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+        </div>
+        <span class="text-xs font-bold text-gray-300 dark:text-gray-600 w-6 text-center order-num"><%= i + 1 %></span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold truncate"><%= t.label %></p>
+          <% if (t.children && t.children.length > 0) { %>
+            <p class="text-[11px] text-gray-400 mt-0.5"><%= t.children.length %> file<%= t.children.length !== 1 ? 's' : '' %></p>
+          <% } else if (t.file) { %>
+            <p class="text-[11px] text-gray-400 mt-0.5"><%= t.file %></p>
+          <% } %>
+        </div>
+        <span class="text-[11px] px-2.5 py-1 rounded-full font-medium <%= t.enabled === false ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' %>"><%= t.enabled === false ? 'Disabled' : 'Active' %></span>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <p class="text-xs text-center text-gray-400">Changes are saved automatically when you drop an item.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+const sortEl = document.getElementById('sortableList');
+function updateNumbers() {
+  sortEl.querySelectorAll('.order-num').forEach((el, i) => {
+    el.textContent = i + 1;
+  });
+}
+new Sortable(sortEl, {
+  animation: 250,
+  easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+  ghostClass: 'opacity-30',
+  chosenClass: 'shadow-lg',
+  dragClass: 'shadow-2xl',
+  onEnd: async function() {
+    const keys = Array.from(sortEl.children).map(el => el.dataset.key);
+    updateNumbers();
+    const status = document.getElementById('saveStatus');
+    const res = await fetch('/dashboard/settings/templates/save-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys })
+    });
+    if (res.ok) {
+      status.style.opacity = '1';
+      setTimeout(() => { status.style.opacity = '0'; }, 2000);
+    }
+  }
+});
+</script>

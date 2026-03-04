@@ -35,6 +35,16 @@ const TemplateController = {
     });
   },
 
+  async reorderPage(req, res) {
+    res.render('dashboard/template-reorder', {
+      layout: 'layouts/main',
+      title: 'Reorder Products',
+      user: req.session.user,
+      templates: PdfService.getLoanProducts(),
+      page: 'templates'
+    });
+  },
+
   // POST /upload — create product (single or multi)
   async uploadTemplate(req, res) {
     let tempPath = null;

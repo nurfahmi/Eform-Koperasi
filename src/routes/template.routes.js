@@ -7,6 +7,7 @@ const roleMiddleware = require('../middlewares/role.middleware');
 const adminOnly = [authMiddleware, roleMiddleware('superadmin')];
 
 router.get('/', ...adminOnly, TemplateController.listTemplates);
+router.get('/reorder', ...adminOnly, TemplateController.reorderPage);
 router.post('/upload', ...adminOnly, TemplateController.uploadMiddleware, TemplateController.uploadTemplate);
 router.get('/:key/map', ...adminOnly, TemplateController.mapFields);
 router.post('/:key/map', ...adminOnly, TemplateController.saveMap);
