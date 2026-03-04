@@ -190,6 +190,20 @@ const PdfService = {
     saveRegistry(registry);
   },
 
+  saveOrder(keys) {
+    const registry = loadRegistry();
+    const sorted = [];
+    for (const key of keys) {
+      const item = registry.find(t => t.key === key);
+      if (item) sorted.push(item);
+    }
+    // append any not in keys (safety)
+    for (const item of registry) {
+      if (!sorted.find(s => s.key === item.key)) sorted.push(item);
+    }
+    saveRegistry(sorted);
+  },
+
   getProduct(key) {
     const registry = loadRegistry();
     // Check top-level

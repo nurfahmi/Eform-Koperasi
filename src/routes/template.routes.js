@@ -13,6 +13,7 @@ router.post('/:key/map', ...adminOnly, TemplateController.saveMap);
 router.get('/:key/pdf', ...adminOnly, TemplateController.servePdf);
 router.post('/:key/toggle', ...adminOnly, TemplateController.toggleProduct);
 router.post('/:key/reorder/:direction', ...adminOnly, TemplateController.reorderProduct);
+router.post('/save-order', ...adminOnly, TemplateController.saveOrder);
 router.post('/:key/delete', ...adminOnly, TemplateController.deleteTemplate);
 router.post('/:key/add-child', ...adminOnly, TemplateController.uploadMiddleware, TemplateController.addChild);
 router.post('/:parentKey/delete-child/:childKey', ...adminOnly, TemplateController.deleteChild);

@@ -44,6 +44,29 @@
     </form>
   </div>
 
+  <!-- Reorder Products -->
+  <% if (templates.length > 1) { %>
+  <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between cursor-pointer" onclick="document.getElementById('reorderSection').classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
+      <h3 class="text-base font-semibold">↕️ Reorder Products</h3>
+      <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </div>
+    <div id="reorderSection" class="hidden p-4">
+      <p class="text-xs text-gray-400 mb-3">Drag and drop to reorder. Changes save automatically.</p>
+      <div id="sortableList" class="space-y-2">
+        <% templates.forEach((t, i) => { %>
+        <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md" data-key="<%= t.key %>">
+          <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+          <span class="text-sm font-medium flex-1"><%= t.label %></span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full <%= t.enabled === false ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'bg-green-100 dark:bg-green-900/30 text-green-500' %>"><%= t.enabled === false ? 'Disabled' : 'Active' %></span>
+        </div>
+        <% }); %>
+      </div>
+      <div id="reorderStatus" class="hidden mt-3 text-xs font-medium text-green-600 dark:text-green-400">✓ Order saved</div>
+    </div>
+  </div>
+  <% } %>
+
   <!-- Products List -->
   <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
@@ -67,10 +90,6 @@
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <div class="flex flex-col gap-0.5 mr-1">
-                  <button type="button" onclick="reorderProduct('<%= t.key %>', 'up')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move up"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button>
-                  <button type="button" onclick="reorderProduct('<%= t.key %>', 'down')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move down"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>
-                </div>
                 <form action="/dashboard/settings/templates/<%= t.key %>/toggle" method="POST" class="inline">
                   <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
                     <%= t.enabled === false ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' %>">
@@ -106,10 +125,6 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <div class="flex flex-col gap-0.5 mr-1">
-                    <button type="button" onclick="event.stopPropagation(); reorderProduct('<%= t.key %>', 'up')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move up"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></button>
-                    <button type="button" onclick="event.stopPropagation(); reorderProduct('<%= t.key %>', 'down')" class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Move down"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>
-                  </div>
                   <form action="/dashboard/settings/templates/<%= t.key %>/toggle" method="POST" class="inline" onclick="event.stopPropagation()">
                     <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
                       <%= t.enabled === false ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' %>">
@@ -234,34 +249,34 @@ document.addEventListener('keydown', function(e) {
   }
 });
 async function reorderProduct(key, direction) {
-  const res = await fetch(`/dashboard/settings/templates/${key}/reorder/${direction}`, { method: 'POST' });
-  if (!res.ok) return;
-  const list = document.querySelector('.divide-y');
-  if (!list) return;
-  const rows = Array.from(list.children).filter(el => el.dataset.productKey);
-  const currentIdx = rows.findIndex(r => r.dataset.productKey === key);
-  if (currentIdx === -1) return;
-  const current = rows[currentIdx];
-  const swapIdx = direction === 'up' ? currentIdx - 1 : currentIdx + 1;
-  if (swapIdx < 0 || swapIdx >= rows.length) return;
-  const sibling = rows[swapIdx];
-  const cRect = current.getBoundingClientRect();
-  const sRect = sibling.getBoundingClientRect();
-  const dy = sRect.top - cRect.top;
-  current.style.transition = 'transform 0.3s ease';
-  sibling.style.transition = 'transform 0.3s ease';
-  current.style.transform = `translateY(${dy}px)`;
-  sibling.style.transform = `translateY(${-dy}px)`;
-  setTimeout(() => {
-    current.style.transition = '';
-    current.style.transform = '';
-    sibling.style.transition = '';
-    sibling.style.transform = '';
-    if (direction === 'up') {
-      list.insertBefore(current, sibling);
-    } else {
-      list.insertBefore(sibling, current);
-    }
-  }, 300);
+  await fetch(`/dashboard/settings/templates/${key}/reorder/${direction}`, { method: 'POST' });
+  location.reload();
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+const sortEl = document.getElementById('sortableList');
+if (sortEl) {
+  new Sortable(sortEl, {
+    animation: 250,
+    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    ghostClass: 'opacity-30',
+    chosenClass: 'shadow-lg',
+    dragClass: 'shadow-2xl',
+    onEnd: async function() {
+      const keys = Array.from(sortEl.children).map(el => el.dataset.key);
+      const status = document.getElementById('reorderStatus');
+      const res = await fetch('/dashboard/settings/templates/save-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys })
+      });
+      if (res.ok) {
+        status.classList.remove('hidden');
+        setTimeout(() => status.classList.add('hidden'), 2000);
+      }
+    }
+  });
+}
+</script>
+

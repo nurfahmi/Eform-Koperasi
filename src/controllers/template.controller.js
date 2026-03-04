@@ -244,6 +244,16 @@ const TemplateController = {
     }
   },
 
+  // POST /save-order — bulk reorder
+  async saveOrder(req, res) {
+    try {
+      PdfService.saveOrder(req.body.keys);
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(400).json({ ok: false, error: err.message });
+    }
+  },
+
   // POST /:key/delete
   async deleteTemplate(req, res) {
     try {
