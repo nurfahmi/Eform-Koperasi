@@ -283,7 +283,7 @@ const Submission = {
   },
 
   async findRecentlyModified(userId, role, limit = 10) {
-    let where = { status: { not: 'draft' } };
+    let where = { status: { not: 'draft' }, taken_by: { not: null } };
     if (role === 'masteragent') {
       where.masteragent_id = userId;
     } else if (role === 'subagent') {
