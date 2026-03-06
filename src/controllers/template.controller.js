@@ -1,4 +1,5 @@
 const PdfService = require('../services/pdf.service');
+const User = require('../models/user.model');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -26,11 +27,13 @@ const TemplateController = {
 
   // GET / — list products
   async listTemplates(req, res) {
+    const masterAgents = await User.findByRole('masteragent');
     res.render('dashboard/templates', {
       layout: 'layouts/main',
       title: 'Loan Products',
       user: req.session.user,
       templates: PdfService.getLoanProducts(),
+      masterAgents,
       page: 'templates'
     });
   },
@@ -233,11 +236,29 @@ const TemplateController = {
     }
   },
 
-  // POST /:key/toggle — enable/disable product
+  // POST /:key/toggle — enable/disable product globally
   async toggleProduct(req, res) {
     try {
       const enabled = PdfService.toggleProduct(req.params.key);
       req.flash('success', `Product ${enabled ? 'enabled' : 'disabled'}.`);
+    } catch (err) {
+      req.flash('error', 'Failed to toggle: ' + err.message);
+    }
+    res.redirect('/dashboard/settings/templates');
+  },
+
+  // POST /:key/toggle-agent — enable/disable product for a specific master agent
+  async toggleProductForAgent(req, res) {
+    try {
+      const { masteragent_id } = req.body;
+      if (!masteragent_id) {
+        req.flash('error', 'Please select a master agent.');
+        return res.redirect('/dashboard/settings/templates');
+      }
+      const enabled = PdfService.toggleProductForAgent(req.params.key, masteragent_id);
+      const agent = await User.findById(masteragent_id);
+      const agentName = agent ? agent.username : masteragent_id;
+      req.flash('success', `Product ${enabled ? 'enabled' : 'disabled'} for ${agentName} and all sub-agents.`);
     } catch (err) {
       req.flash('error', 'Failed to toggle: ' + err.message);
     }

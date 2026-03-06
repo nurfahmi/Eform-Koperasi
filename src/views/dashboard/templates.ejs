@@ -61,33 +61,74 @@
         <% templates.forEach(t => { %>
           <% if (!t.children || t.children.length === 0 && t.file) { %>
             <!-- Single-file product -->
-            <div class="px-6 py-4 flex items-center justify-between<%= t.enabled === false ? ' opacity-50' : '' %>" data-product-key="<%= t.key %>">
-              <div>
-                <p class="text-sm font-semibold"><%= t.label %></p>
-                <p class="text-xs text-gray-400 mt-0.5">
-                  <%= t.file %>
-                  <% if (t.enabled === false) { %>
-                    <span class="ml-2 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium">Disabled</span>
-                  <% } %>
-                </p>
+            <div class="px-6 py-4<%= t.enabled === false ? ' opacity-50' : '' %>" data-product-key="<%= t.key %>">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-semibold"><%= t.label %></p>
+                  <p class="text-xs text-gray-400 mt-0.5">
+                    <%= t.file %>
+                    <% if (t.enabled === false) { %>
+                      <span class="ml-2 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium">Disabled</span>
+                    <% } %>
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <form action="/dashboard/settings/templates/<%= t.key %>/toggle" method="POST" class="inline">
+                    <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
+                      <%= t.enabled === false ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' %>">
+                      <%= t.enabled === false ? 'Enable' : 'Disable' %>
+                    </button>
+                  </form>
+                  <a href="/dashboard/settings/templates/<%= t.key %>/map"
+                    class="px-3 py-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
+                    Map Fields
+                  </a>
+                  <form action="/dashboard/settings/templates/<%= t.key %>/delete" method="POST" class="inline delete-form">
+                    <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                      Delete
+                    </button>
+                  </form>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                <form action="/dashboard/settings/templates/<%= t.key %>/toggle" method="POST" class="inline">
-                  <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors
-                    <%= t.enabled === false ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' %>">
-                    <%= t.enabled === false ? 'Enable' : 'Disable' %>
-                  </button>
-                </form>
-                <a href="/dashboard/settings/templates/<%= t.key %>/map"
-                  class="px-3 py-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
-                  Map Fields
-                </a>
-                <form action="/dashboard/settings/templates/<%= t.key %>/delete" method="POST" class="inline delete-form">
-                  <button type="submit" class="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                    Delete
-                  </button>
-                </form>
+              <!-- Per-Agent Disable Section -->
+              <% if (t.enabled !== false && typeof masterAgents !== 'undefined' && masterAgents.length > 0) { %>
+              <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Disable for agent:</span>
+                  <form action="/dashboard/settings/templates/<%= t.key %>/toggle-agent" method="POST" class="inline flex items-center gap-2">
+                    <div class="searchable-dropdown relative" data-disabled-for="<%= JSON.stringify(t.disabledFor || []) %>">
+                      <input type="hidden" name="masteragent_id" required>
+                      <input type="text" placeholder="Search agent..." autocomplete="off"
+                        class="sd-input px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs outline-none w-40 focus:ring-2 focus:ring-primary-500">
+                      <div class="sd-list hidden absolute z-50 mt-1 w-48 max-h-40 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                        <% masterAgents.forEach(ma => { %>
+                          <div class="sd-option px-3 py-1.5 text-xs cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 <%= (t.disabledFor || []).includes(ma.id) ? 'opacity-40 pointer-events-none' : '' %>"
+                            data-value="<%= ma.id %>" data-label="<%= ma.username %>"><%= ma.username %></div>
+                        <% }) %>
+                        <div class="sd-empty hidden px-3 py-2 text-xs text-gray-400">No results</div>
+                      </div>
+                    </div>
+                    <button type="submit" class="px-2 py-1 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-100 transition-colors">Disable</button>
+                  </form>
+                </div>
+                <% if (t.disabledFor && t.disabledFor.length > 0) { %>
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                  <% t.disabledFor.forEach(agentId => { %>
+                    <% const agent = masterAgents.find(m => m.id === agentId); %>
+                    <% if (agent) { %>
+                    <form action="/dashboard/settings/templates/<%= t.key %>/toggle-agent" method="POST" class="inline">
+                      <input type="hidden" name="masteragent_id" value="<%= agentId %>">
+                      <button type="submit" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" title="Click to re-enable for <%= agent.username %>">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <%= agent.username %>
+                      </button>
+                    </form>
+                    <% } %>
+                  <% }) %>
+                </div>
+                <% } %>
               </div>
+              <% } %>
             </div>
 
           <% } else { %>
@@ -124,6 +165,46 @@
                   </form>
                 </div>
               </div>
+
+              <!-- Per-Agent Disable Section for multi-file -->
+              <% if (t.enabled !== false && typeof masterAgents !== 'undefined' && masterAgents.length > 0) { %>
+              <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800" onclick="event.stopPropagation()">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Disable for agent:</span>
+                  <form action="/dashboard/settings/templates/<%= t.key %>/toggle-agent" method="POST" class="inline flex items-center gap-2">
+                    <div class="searchable-dropdown relative" data-disabled-for="<%= JSON.stringify(t.disabledFor || []) %>">
+                      <input type="hidden" name="masteragent_id" required>
+                      <input type="text" placeholder="Search agent..." autocomplete="off"
+                        class="sd-input px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs outline-none w-40 focus:ring-2 focus:ring-primary-500">
+                      <div class="sd-list hidden absolute z-50 mt-1 w-48 max-h-40 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                        <% masterAgents.forEach(ma => { %>
+                          <div class="sd-option px-3 py-1.5 text-xs cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 <%= (t.disabledFor || []).includes(ma.id) ? 'opacity-40 pointer-events-none' : '' %>"
+                            data-value="<%= ma.id %>" data-label="<%= ma.username %>"><%= ma.username %></div>
+                        <% }) %>
+                        <div class="sd-empty hidden px-3 py-2 text-xs text-gray-400">No results</div>
+                      </div>
+                    </div>
+                    <button type="submit" class="px-2 py-1 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-100 transition-colors">Disable</button>
+                  </form>
+                </div>
+                <% if (t.disabledFor && t.disabledFor.length > 0) { %>
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                  <% t.disabledFor.forEach(agentId => { %>
+                    <% const agent = masterAgents.find(m => m.id === agentId); %>
+                    <% if (agent) { %>
+                    <form action="/dashboard/settings/templates/<%= t.key %>/toggle-agent" method="POST" class="inline">
+                      <input type="hidden" name="masteragent_id" value="<%= agentId %>">
+                      <button type="submit" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" title="Click to re-enable for <%= agent.username %>">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <%= agent.username %>
+                      </button>
+                    </form>
+                    <% } %>
+                  <% }) %>
+                </div>
+                <% } %>
+              </div>
+              <% } %>
 
               <!-- Children rows -->
               <div class="child-rows hidden mt-3 ml-6 space-y-2" data-parent="<%= t.key %>">
@@ -229,5 +310,42 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     document.getElementById('addChildModal')?.classList.add('hidden');
   }
+});
+
+// Searchable dropdowns
+document.querySelectorAll('.searchable-dropdown').forEach(container => {
+  const hiddenInput = container.querySelector('input[type=hidden]');
+  const textInput = container.querySelector('.sd-input');
+  const list = container.querySelector('.sd-list');
+  const options = container.querySelectorAll('.sd-option');
+  const empty = container.querySelector('.sd-empty');
+
+  textInput.addEventListener('focus', () => list.classList.remove('hidden'));
+  textInput.addEventListener('input', () => {
+    const q = textInput.value.toLowerCase();
+    let visible = 0;
+    options.forEach(opt => {
+      const match = opt.dataset.label.toLowerCase().includes(q);
+      opt.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    empty.classList.toggle('hidden', visible > 0);
+    list.classList.remove('hidden');
+    // clear selection if user types after selecting
+    hiddenInput.value = '';
+  });
+
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      hiddenInput.value = opt.dataset.value;
+      textInput.value = opt.dataset.label;
+      list.classList.add('hidden');
+    });
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (!container.contains(e.target)) list.classList.add('hidden');
+  });
 });
 </script>

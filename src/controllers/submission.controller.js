@@ -44,13 +44,18 @@ const SubmissionController = {
     const ref = req.query.ref || '';
     const productParam = req.query.product || '';
     let agentName = null;
+    let masteragentId = null;
 
     if (ref) {
       agentName = await ReferralService.getAgentName(ref);
+      const resolved = await ReferralService.resolve(ref);
+      masteragentId = resolved.masteragent_id;
     }
 
     const PdfService = require('../services/pdf.service');
-    const loanProducts = PdfService.getEnabledProducts();
+    const loanProducts = masteragentId
+      ? PdfService.getEnabledProductsForAgent(masteragentId)
+      : PdfService.getEnabledProducts();
 
     res.render('public/submit', {
       layout: false,
@@ -75,7 +80,18 @@ const SubmissionController = {
     // Fetch agents list for admin/superadmin to assign referer
     const isAdmin = currentUser.role === 'superadmin' || currentUser.role === 'admin';
     const agents = isAdmin ? await User.findAgents() : [];
-    const loanProducts = PdfService.getEnabledProducts();
+
+    // Determine master agent ID for product filtering
+    let masteragentId = null;
+    if (currentUser.role === 'masteragent') {
+      masteragentId = currentUser.id;
+    } else if (currentUser.role === 'subagent' && fullUser?.parent_id) {
+      masteragentId = fullUser.parent_id;
+    }
+
+    const loanProducts = masteragentId
+      ? PdfService.getEnabledProductsForAgent(masteragentId)
+      : PdfService.getEnabledProducts();
 
     res.render('dashboard/submit', {
       layout: 'layouts/main',

@@ -47,6 +47,14 @@ const DashboardController = {
 
       const PdfService = require('../services/pdf.service');
 
+      // Determine master agent ID for product filtering
+      let masteragentId = null;
+      if (currentUser.role === 'masteragent') {
+        masteragentId = currentUser.id;
+      } else if (currentUser.role === 'subagent' && fullUser?.parent_id) {
+        masteragentId = fullUser.parent_id;
+      }
+
       res.render('dashboard/main', {
         layout: 'layouts/main',
         title: 'Dashboard',
@@ -60,7 +68,9 @@ const DashboardController = {
         recentlyModified,
         referralCode: fullUser?.referral_code || null,
         loanProducts: PdfService.getLoanProducts(),
-        enabledProducts: PdfService.getEnabledProducts(),
+        enabledProducts: masteragentId
+          ? PdfService.getEnabledProductsForAgent(masteragentId)
+          : PdfService.getEnabledProducts(),
         baseUrl: req.protocol + '://' + req.get('host'),
         page: 'main'
       });

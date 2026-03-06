@@ -171,6 +171,16 @@ const PdfService = {
     return loadRegistry().filter(p => p.enabled !== false);
   },
 
+  // Get products enabled for a specific master agent
+  getEnabledProductsForAgent(masteragentId) {
+    return loadRegistry().filter(p => {
+      if (p.enabled === false) return false; // globally disabled
+      if (!masteragentId) return true;
+      const disabledFor = p.disabledFor || [];
+      return !disabledFor.includes(masteragentId);
+    });
+  },
+
   toggleProduct(key) {
     const registry = loadRegistry();
     const product = registry.find(t => t.key === key);
@@ -178,6 +188,28 @@ const PdfService = {
     product.enabled = product.enabled === false ? true : false;
     saveRegistry(registry);
     return product.enabled;
+  },
+
+  // Toggle product for a specific master agent
+  toggleProductForAgent(key, masteragentId) {
+    const registry = loadRegistry();
+    const product = registry.find(t => t.key === key);
+    if (!product) throw new Error(`Product "${key}" not found`);
+    if (!product.disabledFor) product.disabledFor = [];
+    const idx = product.disabledFor.indexOf(masteragentId);
+    if (idx >= 0) {
+      product.disabledFor.splice(idx, 1); // re-enable
+    } else {
+      product.disabledFor.push(masteragentId); // disable
+    }
+    saveRegistry(registry);
+    return !product.disabledFor.includes(masteragentId); // returns true if now enabled
+  },
+
+  // Get the disabledFor list for a product
+  getProductDisabledFor(key) {
+    const product = this.getProduct(key);
+    return product ? (product.disabledFor || []) : [];
   },
 
   reorderProduct(key, direction) {
