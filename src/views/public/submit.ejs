@@ -246,47 +246,57 @@
       <!-- Section 5: Document Upload -->
       <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
         <h2 class="text-lg font-semibold mb-2">5. Dokumen Diperlukan</h2>
-        <p class="text-xs text-gray-400 mb-4">Format: JPG, PNG, PDF | Max: 5MB per file</p>
+        <p class="text-xs text-gray-400 mb-4">Format: JPG, PNG, PDF | Max: 5MB per file | <span class="text-red-500">*</span> = Wajib</p>
+        <%
+          const _s = typeof siteSettings !== 'undefined' ? siteSettings : {};
+          function isFileReq(key) {
+            const v = _s['req_' + key];
+            if (v === 'true') return true;
+            if (!v && (key === 'ic_depan' || key === 'ic_belakang')) return true;
+            return false;
+          }
+          function reqStar(key) { return isFileReq(key) ? '<span class="text-red-500 ml-0.5">*</span>' : ''; }
+        %>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Depan</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Depan <%- reqStar('ic_depan') %></label>
             <input type="file" name="ic_depan" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Belakang</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IC Belakang <%- reqStar('ic_belakang') %></label>
             <input type="file" name="ic_belakang" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 1</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 1 <%- reqStar('payslip1') %></label>
             <input type="file" name="payslip1" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 2</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 2 <%- reqStar('payslip2') %></label>
             <input type="file" name="payslip2" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 3</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payslip Terkini 3 <%- reqStar('payslip3') %></label>
             <input type="file" name="payslip3" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Muka Surat Akaun Bank</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Muka Surat Akaun Bank <%- reqStar('bank_page') %></label>
             <input type="file" name="bank_page" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tandatangan Customer</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tandatangan Customer <%- reqStar('signature') %></label>
             <input type="file" name="signature" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chop Bulat, Chop Nama & Sign Majikan</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chop Bulat, Chop Nama & Sign Majikan <%- reqStar('chop_sign') %></label>
             <input type="file" name="chop_sign" accept=".jpg,.jpeg,.png,.pdf" multiple class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
             <p class="text-xs text-gray-400 mt-1">Boleh muat naik lebih dari satu fail</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bill Rumah</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bill Rumah <%- reqStar('bill_rumah') %></label>
             <input type="file" name="bill_rumah" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Settlement Letter</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Settlement Letter <%- reqStar('settlement_letter') %></label>
             <input type="file" name="settlement_letter" accept=".jpg,.jpeg,.png,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100">
           </div>
           <div class="sm:col-span-2">
@@ -385,32 +395,44 @@ bagi mengisi semua ruangan secara automatik.
   </script>
 
   <script>
-  (function() {
-    const form = document.getElementById('submitForm');
-    const errorDiv = document.getElementById('fileError');
-    const requiredFiles = {
-      ic_depan: 'IC Depan', ic_belakang: 'IC Belakang'
-    };
+(function() {
+  const form = document.getElementById('submitForm');
+  const errorDiv = document.getElementById('fileError');
+  const requiredFiles = {};
+  <% const _ss = typeof siteSettings !== 'undefined' ? siteSettings : {};
+     const _fileMap = {
+       ic_depan: 'IC Depan', ic_belakang: 'IC Belakang',
+       payslip1: 'Payslip Terkini 1', payslip2: 'Payslip Terkini 2', payslip3: 'Payslip Terkini 3',
+       bank_page: 'Muka Surat Akaun Bank', signature: 'Tandatangan Customer',
+       chop_sign: 'Chop & Sign Majikan', bill_rumah: 'Bill Rumah', settlement_letter: 'Settlement Letter'
+     };
+     Object.entries(_fileMap).forEach(([key, label]) => {
+       const settingKey = 'req_' + key;
+       const isReq = _ss[settingKey] === 'true' || (!_ss[settingKey] && (key === 'ic_depan' || key === 'ic_belakang'));
+       if (isReq) { %>
+  requiredFiles['<%= key %>'] = '<%= label %>';
+  <%   }
+     }); %>
 
-    form.addEventListener('submit', function(e) {
-      const missing = [];
-      for (const [name, label] of Object.entries(requiredFiles)) {
-        const input = form.querySelector('input[name="' + name + '"]');
-        if (!input || !input.files || input.files.length === 0) {
-          missing.push(label);
-        }
+  form.addEventListener('submit', function(e) {
+    const missing = [];
+    for (const [name, label] of Object.entries(requiredFiles)) {
+      const input = form.querySelector('input[name="' + name + '"]');
+      if (!input || !input.files || input.files.length === 0) {
+        missing.push(label);
       }
-      if (missing.length > 0) {
-        e.preventDefault();
-        errorDiv.innerHTML = '<strong>Sila muat naik dokumen yang diperlukan:</strong><br>' + missing.join(', ');
-        errorDiv.classList.remove('hidden');
-        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        errorDiv.classList.add('hidden');
-      }
-    });
-  })();
-  </script>
+    }
+    if (missing.length > 0) {
+      e.preventDefault();
+      errorDiv.innerHTML = '<strong>Sila muat naik dokumen yang diperlukan:</strong><br>' + missing.join(', ');
+      errorDiv.classList.remove('hidden');
+      errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      errorDiv.classList.add('hidden');
+    }
+  });
+})();
+</script>
 
   <div id="iqSettings" class="hidden"
     data-enabled="<%= (typeof siteSettings !== 'undefined' && siteSettings.iq_enabled) || 'true' %>"

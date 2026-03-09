@@ -55,7 +55,9 @@ const SettingController = {
       const toBool = v => Array.isArray(v) ? v.includes('true') ? 'true' : 'false' : (v === 'true' ? 'true' : 'false');
 
       const { site_name, site_short, primary_color, accent_color,
-        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload, upload_dir, force_uppercase } = req.body;
+        iq_enabled, iq_blur_threshold, iq_bright_threshold, iq_bright_percent, iq_block_upload, upload_dir, force_uppercase,
+        req_ic_depan, req_ic_belakang, req_payslip1, req_payslip2, req_payslip3,
+        req_bank_page, req_signature, req_chop_sign, req_bill_rumah, req_settlement_letter } = req.body;
       const updates = { site_name, site_short, primary_color, accent_color,
         iq_enabled: toBool(iq_enabled),
         iq_blur_threshold: iq_blur_threshold || '50',
@@ -63,7 +65,17 @@ const SettingController = {
         iq_bright_percent: iq_bright_percent || '40',
         iq_block_upload: toBool(iq_block_upload),
         upload_dir: upload_dir || '',
-        force_uppercase: toBool(force_uppercase)
+        force_uppercase: toBool(force_uppercase),
+        req_ic_depan: toBool(req_ic_depan),
+        req_ic_belakang: toBool(req_ic_belakang),
+        req_payslip1: toBool(req_payslip1),
+        req_payslip2: toBool(req_payslip2),
+        req_payslip3: toBool(req_payslip3),
+        req_bank_page: toBool(req_bank_page),
+        req_signature: toBool(req_signature),
+        req_chop_sign: toBool(req_chop_sign),
+        req_bill_rumah: toBool(req_bill_rumah),
+        req_settlement_letter: toBool(req_settlement_letter)
       };
 
       // Handle logo upload

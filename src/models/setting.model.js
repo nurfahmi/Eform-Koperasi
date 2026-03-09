@@ -14,7 +14,18 @@ const DEFAULTS = {
   iq_bright_percent: '40',
   iq_block_upload: 'false',
   upload_dir: '',
-  force_uppercase: 'false'
+  force_uppercase: 'false',
+  // File requirement settings
+  req_ic_depan: 'true',
+  req_ic_belakang: 'true',
+  req_payslip1: 'false',
+  req_payslip2: 'false',
+  req_payslip3: 'false',
+  req_bank_page: 'false',
+  req_signature: 'false',
+  req_chop_sign: 'false',
+  req_bill_rumah: 'false',
+  req_settlement_letter: 'false'
 };
 
 const Setting = {

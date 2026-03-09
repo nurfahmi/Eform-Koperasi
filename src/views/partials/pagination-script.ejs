@@ -26,12 +26,10 @@
 
     function render() {
       const allRows = getAllDataRows();
-      // Get rows not hidden by search
-      const searchVisible = allRows.filter(function(r) { return r.style.display !== 'none' || r.classList.contains('pagination-hidden'); });
-      // Actually: we need to track search vs pagination hiding separately
       // Remove pagination hiding first to count search-visible
-      allRows.forEach(function(r) { r.classList.remove('pagination-hidden'); });
-      const visible = allRows.filter(function(r) { return r.style.display !== 'none'; });
+      allRows.forEach(function(r) { r.classList.remove('pagination-hidden'); r.removeAttribute('data-pg-hidden'); });
+      // Visible = rows NOT hidden by search (data-search-hidden)
+      const visible = allRows.filter(function(r) { return !r.hasAttribute('data-search-hidden'); });
       const total = visible.length;
       const totalPages = Math.max(1, Math.ceil(total / perPage));
       if (currentPage > totalPages) currentPage = totalPages;
@@ -74,7 +72,7 @@
     const observer = new MutationObserver(function() { currentPage = 1; render(); });
     const tbody = document.getElementById(tableId);
     if (tbody) {
-      observer.observe(tbody, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+      observer.observe(tbody, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'data-search-hidden'] });
     }
 
     // Also listen to search inputs
@@ -91,4 +89,5 @@
 </script>
 <style>
   tr[data-pg-hidden="1"] { display: none !important; }
+  tr[data-search-hidden="1"] { display: none !important; }
 </style>

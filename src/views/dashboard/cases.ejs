@@ -107,8 +107,12 @@
         const name = row.dataset.name || '';
         const ic = row.dataset.ic || '';
         const match = !q || name.includes(q) || ic.includes(q);
-        row.style.display = match ? '' : 'none';
-        if (match) visible++;
+        if (match) {
+          row.removeAttribute('data-search-hidden');
+          visible++;
+        } else {
+          row.setAttribute('data-search-hidden', '1');
+        }
       });
       noResults.classList.toggle('hidden', visible > 0);
     });

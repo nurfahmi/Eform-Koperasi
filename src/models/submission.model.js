@@ -188,15 +188,10 @@ const Submission = {
       .filter(Boolean)
       .sort((a, b) => a.username.localeCompare(b.username));
 
-    // Count total matching
-    const total = await prisma.submission.count({ where });
-
-    // Fetch paginated rows
+    // Fetch ALL matching rows (no pagination yet — need to decrypt and search first)
     const rows = await prisma.submission.findMany({
       where,
       orderBy: { taken_at: 'desc' },
-      skip: (page - 1) * perPage,
-      take: perPage,
       include: {
         subagent: { select: { username: true } },
         masteragent: { select: { username: true } },
@@ -207,7 +202,7 @@ const Submission = {
 
     let results = await this._withNames(rows);
 
-    // Text search filter (client-side on decrypted names — can't do in DB due to encryption)
+    // Text search filter on decrypted names (can't do in DB due to encryption)
     if (search) {
       const q = search.toLowerCase();
       results = results.filter(r =>
@@ -216,7 +211,13 @@ const Submission = {
       );
     }
 
-    return { results, total, takerList, page, perPage, totalPages: Math.ceil(total / perPage) };
+    // Paginate AFTER search filtering
+    const total = results.length;
+    const totalPages = Math.ceil(total / perPage) || 1;
+    const safePage = Math.min(page, totalPages);
+    const paginated = results.slice((safePage - 1) * perPage, safePage * perPage);
+
+    return { results: paginated, total, takerList, page: safePage, perPage, totalPages };
   },
 
   async takeCase(id, userId) {
